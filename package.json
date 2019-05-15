@@ -18,5 +18,9 @@
     "dev": "run-p start:dev autobuild",
     "start": "sirv public",
     "start:dev": "sirv public --dev"
+  },
+  "dependencies": {
+    "pdfjs-dist": "^2.0.943",
+    "tesseract.js": "^2.0.0-alpha.4"
   }
 }
