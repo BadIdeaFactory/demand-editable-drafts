@@ -1,4 +1,6 @@
 <script>
+	import Page from './Page.svelte';
+	
 	export let name;
 </script>
 
@@ -9,3 +11,5 @@
 </style>
 
 <h1>Hello {name}!</h1>
+
+<Page src="/documents/salma_bill.pdf" />
