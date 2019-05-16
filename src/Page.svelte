@@ -3,11 +3,11 @@
 <script>
   export let src;
   export let pdfDoc;
-  let pageCanvas;
+  export let pageCanvas;
   let pageNum = 1;
   let pageRendering = false;
   let pageNumPending = null;
-  let scale = 0.8;
+  let scale = 2.0;
   let ctx;
 
 
@@ -45,6 +45,18 @@
     // Update page counters
     //document.getElementById('page_num').textContent = num;
   }
+
+  let renderPreviousPage = async () => {
+    if (pageNum > 1) { pageNum = pageNum - 1; }
+    else { pageNum = 1; }
+    await renderPage(pageNum);
+  };
+
+  let renderNextPage = async() => {
+    if (pageNum < pdfDoc.numPages) { pageNum = pageNum + 1; }
+    else { pageNum = pdfDoc.numPages; }
+    await renderPage(pageNum);
+  };
   
   let loadDocument = async (source) => {
     pdfDoc = await pdfjs.getDocument(source);
@@ -53,15 +65,18 @@
 	onMount(async () => {
     await loadDocument(src);
     ctx = pageCanvas.getContext('2d');
-    renderPage(1);
+    renderPage(pageNum);
 	});
 
 </script>
 
 <div class="page-wrapper">
   {#if pdfDoc }
-    <p>Got Doc!</p>
-    <p>Document has {pdfDoc.numPages} pages</p>
+    <header>
+      <button on:click|preventDefault={renderPreviousPage} >&lt;</button>
+      <p>Page {pageNum} of {pdfDoc.numPages}</p>
+      <button on:click|preventDefault={renderNextPage}>&gt;</button>
+    </header>
     <canvas bind:this={pageCanvas}></canvas>
   {:else }
     <p>Waiting for Page</p>
@@ -74,8 +89,16 @@
     background-color: #ccc;
   }
 
+  .page-wrapper header {
+    display: flex;
+  }
+
+  .page-wrapper header p {
+    vertical-align: middle;
+  }
+
   .page-wrapper canvas {
-    width: 400px;
+    min-width: 400px;
     min-height: 400px;
   }
 </style>
