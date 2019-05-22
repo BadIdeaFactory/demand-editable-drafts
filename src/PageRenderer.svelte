@@ -5,8 +5,8 @@
   export let pdfDoc;      // the pdf proxy object loaded by pdf.js
   export let page;        // the current page of the pdf we've loaded.
   export let viewport;    // the pdf.js viewport object for the current page
+  export let container;   // the container element for our various elements.
   export let pageCanvas;  // the canvas element the viewport is drawn into
-  export let textLayer;   // a container to let pdfjs render text divs into
   let ctx;                // the canvas context object
   let scale = 1.3;        // the presentational scale for the page
   let pageNum = 1;        // default to the first page of the PDF.
@@ -67,7 +67,14 @@
   export async function drawTextBounds(itemNumber) {
     if (!page) { await getPage(pageNum); };
     let items = await page.getTextContent();
+    let textLayer = await document.createElement('div');
     textLayer.style = `left: ${pageCanvas.offsetLeft}px; top: ${pageCanvas.offsetTop}px; height: ${pageCanvas.height}px; width: ${pageCanvas.width}px;`;
+
+    let currentTextLayer = document.getElementById('text-layer');
+    if (currentTextLayer) {
+      container.replaceChild(textLayer, currentTextLayer);
+      textLayer.id = 'text-layer';
+    }
 
     await pdfjs.renderTextLayer({
       textContent: items,
@@ -210,7 +217,7 @@
 
 </script>
 
-<div class="page-wrapper">
+<div class="page-wrapper" bind:this={container}>
   {#if pdfDoc }
     <header>
       <button on:click|preventDefault={previousPage} >&lt;</button>
@@ -218,7 +225,7 @@
       <button on:click|preventDefault={nextPage}>&gt;</button>
     </header>
     <canvas bind:this={pageCanvas}></canvas>
-    <div id="text-layer" bind:this={textLayer}></div>
+    <div id="text-layer"></div>
   {:else }
     <p>Waiting for Page</p>
   {/if}
@@ -238,7 +245,7 @@
     vertical-align: middle;
   }
 
-  #text-layer { 
+  :global(#text-layer) { 
     position: absolute;
     left: 0;
     top: 0;
@@ -249,7 +256,7 @@
     line-height: 1.0;
   }
   
-  #text-layer :global(span) {
+  :global(#text-layer) :global(span) {
     color: transparent;
     position: absolute;
     white-space: pre;
