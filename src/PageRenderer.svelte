@@ -6,6 +6,7 @@
   export let page;        // the current page of the pdf we've loaded.
   export let viewport;    // the pdf.js viewport object for the current page
   export let pageCanvas;  // the canvas element the viewport is drawn into
+  export let textLayer;   // a container to let pdfjs render text divs into
   let ctx;                // the canvas context object
   let scale = 1.3;        // the presentational scale for the page
   let pageNum = 1;        // default to the first page of the PDF.
@@ -64,17 +65,33 @@
   };
 
   export async function drawTextBounds(itemNumber) {
+    if (!page) { await getPage(pageNum); };
+    let items = await page.getTextContent();
+    textLayer.style = `left: ${pageCanvas.offsetLeft}px; top: ${pageCanvas.offsetTop}px; height: ${pageCanvas.height}px; width: ${pageCanvas.width}px;`;
+
+    await pdfjs.renderTextLayer({
+      textContent: items,
+      container: textLayer,
+      viewport: viewport,
+      textDivs: []
+    });
+    /*
     let data = await getText();
     let items = data.items;
 
-    let drawItem = (item, vp, context) => {
+    let drawItem2 = (item, vp, context) => {
       const calculateCoordinates = (item) => {
-        const itemRotated = pdfjs.Util.transform(vp.transform, item.transform);
+        // take the item's transform vector and modify it by the viewport's.
+        const itemRotated = pdfjs.Util.transform(
+          pdfjs.Util.transform(vp.transform, item.transform),
+          [1, 0, 0, -1, 0, 0]
+        );
         const x = itemRotated[4];
         const y = itemRotated[5];
         // item.height is not correct for some cases (https://github.com/mozilla/pdf.js/issues/8276)
         const height = Math.sqrt((itemRotated[2] * itemRotated[2]) + (itemRotated[3] * itemRotated[3]));
         const width =  item.width;
+        // calculate the rotation of the item
         const itemAngle =  Math.atan2(itemRotated[2], itemRotated[0]);
     
         // This will provide top left, clockwise bounding box
@@ -117,16 +134,21 @@
       };
 
       let coordinates = calculateCoordinates(item, viewport, context);
-      console.log(coordinates);
-      console.log(item)
+      //console.log(coordinates);
+      //console.log(item)
       drawBox(coordinates, context);
     };
 
+    let drawItem = (item, vp, context) => {
+
+    };
+
     if (itemNumber){
-      drawItem(items[itemNumber], viewport, ctx);
+      drawItem2(items[itemNumber], viewport, ctx);
     } else {
-      items.forEach((item) => { drawItem(item, viewport, ctx); } );
+      items.forEach((item) => { drawItem2(item, viewport, ctx); } );
     }
+    */
   };
 
   /*
@@ -161,7 +183,7 @@
 
   let getPageText = async () => {
     if (!page) { await getPage(pageNum); };
-    return await page.getTextContent();
+    return await page.getTextContent({normalizeWhiteSpace: true});
   };
 
   let previousPage = async () => {
@@ -196,6 +218,7 @@
       <button on:click|preventDefault={nextPage}>&gt;</button>
     </header>
     <canvas bind:this={pageCanvas}></canvas>
+    <div id="text-layer" bind:this={textLayer}></div>
   {:else }
     <p>Waiting for Page</p>
   {/if}
@@ -214,4 +237,25 @@
   .page-wrapper header p {
     vertical-align: middle;
   }
+
+  #text-layer { 
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    overflow: hidden;
+    opacity: 0.2;
+    line-height: 1.0;
+  }
+  
+  #text-layer :global(span) {
+    color: transparent;
+    position: absolute;
+    white-space: pre;
+    cursor: text;
+    transform-origin: 0% 0%;
+    border: solid 1px black;
+  }
+
 </style>
