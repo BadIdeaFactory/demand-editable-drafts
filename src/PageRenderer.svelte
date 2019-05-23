@@ -76,86 +76,14 @@
       textLayer.id = 'text-layer';
     }
 
+    // Just cheat by asking `pdfjs` to do it's default thing.
+    // It'll draw a series of spans into the container
     await pdfjs.renderTextLayer({
       textContent: items,
       container: textLayer,
       viewport: viewport,
       textDivs: []
     });
-    /*
-    let data = await getText();
-    let items = data.items;
-
-    let drawItem2 = (item, vp, context) => {
-      const calculateCoordinates = (item) => {
-        // take the item's transform vector and modify it by the viewport's.
-        const itemRotated = pdfjs.Util.transform(
-          pdfjs.Util.transform(vp.transform, item.transform),
-          [1, 0, 0, -1, 0, 0]
-        );
-        const x = itemRotated[4];
-        const y = itemRotated[5];
-        // item.height is not correct for some cases (https://github.com/mozilla/pdf.js/issues/8276)
-        const height = Math.sqrt((itemRotated[2] * itemRotated[2]) + (itemRotated[3] * itemRotated[3]));
-        const width =  item.width;
-        // calculate the rotation of the item
-        const itemAngle =  Math.atan2(itemRotated[2], itemRotated[0]);
-    
-        // This will provide top left, clockwise bounding box
-        const horizontalBoundingBox = [
-            x, y - height,
-            x + width, y - height,
-            x + width, y,
-            x, y
-        ];
-        // return rotated bounding box in pixels
-        return rotateBoundingBox(horizontalBoundingBox, [x, y], itemAngle);
-      };
-
-      const rotateBoundingBox = (absBox, origin, rads) => {
-          const [originX, originY] = origin;
-          const cosT = Math.cos(rads);
-          const sinT = Math.sin(rads);
-
-          const rotate = (x, y) => ([
-              (x - originX) * cosT - (y - originY) * sinT + originX, 
-              (x - originX) * sinT + (y - originY) * cosT + originY
-          ]);
-
-          const [v1x, v1y, v2x, v2y, v3x, v3y, v4x, v4y] = absBox;
-          return [
-              rotate(v1x, v1y),
-              rotate(v2x, v2y),
-              rotate(v3x, v3y),
-              rotate(v4x, v4y)
-          ];
-      };
-
-      let drawBox = (coordinates) => {
-        context.strokeStyle = 'green';
-        context.beginPath();
-        context.moveTo(...coordinates[3]);
-        coordinates.forEach((point) => context.lineTo(...point));
-        context.stroke();
-        //context.strokeRect(...coordinates);
-      };
-
-      let coordinates = calculateCoordinates(item, viewport, context);
-      //console.log(coordinates);
-      //console.log(item)
-      drawBox(coordinates, context);
-    };
-
-    let drawItem = (item, vp, context) => {
-
-    };
-
-    if (itemNumber){
-      drawItem2(items[itemNumber], viewport, ctx);
-    } else {
-      items.forEach((item) => { drawItem2(item, viewport, ctx); } );
-    }
-    */
   };
 
   /*
