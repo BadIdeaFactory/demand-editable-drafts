@@ -7,10 +7,15 @@
 	export let picker;
 	export let fileContents;
 	export let analyzer;
+
+	let pickerHandler = (contents)=>{
+		console.log(contents);
+		fileContents = contents;
+	}
 </script>
 
 <main>
-<FilePicker accept={"application/pdf"} bind:fileContents={fileContents} bind:this={picker} />
+<FilePicker accept={"application/pdf"} onChange={pickerHandler} bind:this={picker} />
 <PageAnalyzer src="/documents/salma_bill.pdf" bind:this={analyzer} />
 </main>
 
