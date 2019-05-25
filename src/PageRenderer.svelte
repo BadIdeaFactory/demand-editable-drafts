@@ -1,19 +1,19 @@
 <svelte:options accessors={true}/>
 
 <script>
-  export let src;         // URL for the pdf
-  export let pdfDoc;      // the pdf proxy object loaded by pdf.js
-  export let page;        // the current page of the pdf we've loaded.
-  export let viewport;    // the pdf.js viewport object for the current page
-  export let container;   // the container element for our various elements.
-  export let pageCanvas;  // the canvas element the viewport is drawn into
+  export let src;         // URL or data for the pdf
+  let pdfDoc;      // the pdf proxy object loaded by pdf.js
+  let page;        // the current page of the pdf we've loaded.
+  let viewport;    // the pdf.js viewport object for the current page
+  let container;   // the container element for our various elements.
+  let pageCanvas;  // the canvas element the viewport is drawn into
   let ctx;                // the canvas context object
   let scale = 1.3;        // the presentational scale for the page
   let pageNum = 1;        // default to the first page of the PDF.
   let pageRendering = false;
   let pageNumPending = null;
 
-	import { onMount } from 'svelte';
+	import { afterUpdate, onMount, onDestroy } from 'svelte';
 	// well this bit is a crazy mess
 	// See: https://github.com/mozilla/pdf.js/issues/10317
 	// and https://github.com/bundled-es-modules/pdfjs-dist
@@ -141,7 +141,11 @@
     await loadDocument(src);
     ctx = pageCanvas.getContext('2d');
     getPage(pageNum);
-	});
+  });
+  
+  afterUpdate(async () => {
+    console.log("Just Updated!");
+  })
 
 </script>
 

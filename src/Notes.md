@@ -14,6 +14,11 @@ The pdfjs core
 
 [react-pdf]: http://projects.wojtekmaj.pl/react-pdf/
 [react-pdf-repo]: https://github.com/wojtekmaj/react-pdf
+[hubgit-example]: https://gist.github.com/hubgit/600ec0c224481e910d2a0f883a7b98e3
+[issue-about-font-extraction]: https://github.com/mozilla/pdf.js/issues/7914
+[bananas-comment-about-bounding-boxes]: https://github.com/mozilla/pdf.js/issues/5643#issuecomment-69969258
+
+
 
 ## Legislative XML
 
