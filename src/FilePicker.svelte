@@ -1,17 +1,19 @@
 <svelte:options accessors={true}/>
 
-<input type="file" accept={accept} bind:this={fileInput} on:change={onChangeHandler} />
+<input type="file" accept={accept} bind:this={fileInput} on:input={onInputHandler} />
 
 <style></style>
 
 <script>
-  export let fileInput;
-  export let fileContents;
-  export let accept;
-  export let onChange;
+  import { afterChange } from 'svelte';
 
-  export function getFiles(){
-    return fileInput.files;
+  let fileInput;
+  let fileContents;
+  export let accept;
+  export let onInput;
+
+  export function getFile(){
+    return fileInput.files[0];
   }
 
   export async function readFile() {
@@ -31,12 +33,12 @@
     return new Promise(filePromise);
   }
 
-  let onChangeHandler = async () => {
+  let onInputHandler = async () => {
     console.log("changing!");
     fileContents = await readFile();
-    if (onChange) { 
+    if (onInput) { 
       console.log("Firing Change Handler");
-      onChange(fileContents);
+      onInput(fileContents);
     }
   };
 </script>

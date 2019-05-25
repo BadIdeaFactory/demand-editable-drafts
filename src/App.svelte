@@ -2,11 +2,11 @@
 
 <script>
 	import PageAnalyzer from './PageAnalyzer.svelte';
+	import PageRenderer from './PageRenderer.svelte';
 	import FilePicker from './FilePicker.svelte'
 	
 	export let picker;
 	export let fileContents;
-	export let analyzer;
 
 	let pickerHandler = (contents)=>{
 		console.log(contents);
@@ -15,8 +15,10 @@
 </script>
 
 <main>
-<FilePicker accept={"application/pdf"} onChange={pickerHandler} bind:this={picker} />
-<PageAnalyzer src="/documents/salma_bill.pdf" bind:this={analyzer} />
+<FilePicker accept={"application/pdf"} onInput={pickerHandler} />
+{#if fileContents}
+<PageRenderer src={fileContents} />
+{/if}
 </main>
 
 <footer class="attribution">
