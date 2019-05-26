@@ -35,12 +35,15 @@
 
   let onInputHandler = async () => {
     console.log("changing!");
-    $documentStore = getFile();
-    fileContents = await readFile();
-    $documentStore.contents = fileContents
-    if (onInput) { 
-      console.log("Firing Change Handler");
-      onInput($documentStore);
+    let newFile = getFile();
+    if (newFile){
+      $documentStore = newFile;
+      fileContents = await readFile();
+      $documentStore.contents = fileContents
+      if (onInput) { 
+        console.log("Firing Change Handler");
+        onInput($documentStore);
+      }
     }
   };
 </script>
