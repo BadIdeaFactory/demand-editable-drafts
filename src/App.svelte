@@ -7,18 +7,31 @@
 	import FileCard from './FileCard.svelte'
 	
 	export let picker;
+	export let renderer;
+	let tessWorker
+
+	let ocr = () => {
+		if (!tessWorker) { tessWorker = new Tesseract.TesseractWorker(); }
+		let myImage = renderer.getCanvas();
+		tessWorker.recognize(myImage)
+  		.progress(message => console.log(message))
+  		.catch(err => console.error(err))
+  		.then(result => console.log(result))
+  		.finally(resultOrError => console.log(resultOrError));
+	}
 </script>
 
 <main>
 	<header>
-		<FilePicker accept={"application/pdf"} />
+		<FilePicker accept={"application/pdf"} bind:this={picker} />
 		{#if $documentStore.contents }
 			<FileCard file={$documentStore} />
+			<button on:click|preventDefault={ocr}>OCR page</button>
 		{/if}
 	</header>
 	<section class="document">
 		{#if $documentStore.contents }
-			<DocumentRenderer src={$documentStore.contents} />
+			<DocumentRenderer src={$documentStore.contents} bind:this={renderer} />
 		{/if}
 	</section>
 	<footer class="attribution">
@@ -50,3 +63,6 @@
 
 </style>
 
+<svelte:head>
+	<script src='https://unpkg.com/tesseract.js@v2.0.0-alpha.10/dist/tesseract.min.js'></script>
+</svelte:head>
