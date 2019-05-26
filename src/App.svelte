@@ -7,16 +7,10 @@
 	import FileCard from './FileCard.svelte'
 	
 	export let picker;
-	export let file;
-
-	let pickerHandler = (f)=>{
-		console.log(f);
-		file = f;
-	}
 </script>
 
 <main>
-<FilePicker accept={"application/pdf"} onInput={pickerHandler} />
+<FilePicker accept={"application/pdf"} />
 {#if $documentStore.contents }
 <FileCard file={$documentStore} />
 <DocumentRenderer src={$documentStore.contents} />

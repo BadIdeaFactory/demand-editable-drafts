@@ -52,6 +52,8 @@
   }
   
   export async function getPage(num) {
+    pageRendering = true;
+
     pageNum = num;
     page = await pdfDoc.getPage(num);
     viewport = page.getViewport({scale: scale});
@@ -69,13 +71,7 @@
     let items = await page.getTextContent();
     let textLayer = await document.createElement('div');
     textLayer.style = `left: ${pageCanvas.offsetLeft}px; top: ${pageCanvas.offsetTop}px; height: ${pageCanvas.height}px; width: ${pageCanvas.width}px;`;
-
-    let currentTextLayer = document.getElementById('text-layer');
-    if (currentTextLayer) {
-      container.replaceChild(textLayer, currentTextLayer);
-      textLayer.id = 'text-layer';
-    }
-
+    replaceTextLayer(textLayer);
     // Just cheat by asking `pdfjs` to do it's default thing.
     // It'll draw a series of spans into the container
     await pdfjs.renderTextLayer({
@@ -89,7 +85,6 @@
   /*
     Internal API below this point.
   */
-
   let renderPage = async (num) => {
     if (!page) { await getPage(pageNum); };
     pageRendering = true;
@@ -137,16 +132,33 @@
     pdfDoc = await pdfjs.getDocument(source).promise;
   };
 
+  let unloadDocument = async () => {
+    clearCanvas();
+    clearTextLayer();
+    pdfDoc.cleanup();
+    pdfDoc.destroy();
+  };
+
+  let clearCanvas = () => {
+    ctx.clearRect(0, 0, pageCanvas.width, pageCanvas.height);
+  };
+
+  let clearTextLayer = () => replaceTextLayer();
+
+  let replaceTextLayer = (node) => {
+    let textLayer = ( node || document.createElement('div') );
+    let currentTextLayer = document.getElementById('text-layer');
+    container.replaceChild(textLayer, currentTextLayer);
+    textLayer.id = 'text-layer';
+  };
+
 	onMount(async () => {
     await loadDocument(src);
     ctx = pageCanvas.getContext('2d');
     getPage(pageNum);
   });
-  
-  afterUpdate(async () => {
-    console.log("Just Updated!");
-  })
 
+  onDestroy(() => { unloadDocument(); });
 </script>
 
 <div class="page-wrapper" bind:this={container}>
