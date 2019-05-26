@@ -5,6 +5,7 @@
 <style></style>
 
 <script>
+  import documentStore from './DocumentStore.js';
   let file;
   let fileInput;
   let fileContents;
@@ -34,12 +35,12 @@
 
   let onInputHandler = async () => {
     console.log("changing!");
-    file = getFile();
+    $documentStore = getFile();
     fileContents = await readFile();
-    file.contents = fileContents
+    $documentStore.contents = fileContents
     if (onInput) { 
       console.log("Firing Change Handler");
-      onInput(file);
+      onInput($documentStore);
     }
   };
 </script>

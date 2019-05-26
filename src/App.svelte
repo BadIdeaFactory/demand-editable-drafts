@@ -1,7 +1,7 @@
 <svelte:options accessors={true}/>
 
 <script>
-	import DocumentAnalyzer from './DocumentAnalyzer.svelte';
+	import documentStore from './DocumentStore.js';
 	import DocumentRenderer from './DocumentRenderer.svelte';
 	import FilePicker from './FilePicker.svelte'
 	import FileCard from './FileCard.svelte'
@@ -17,9 +17,9 @@
 
 <main>
 <FilePicker accept={"application/pdf"} onInput={pickerHandler} />
-{#if file }
-<FileCard file={file} />
-<DocumentRenderer src={file.contents} />
+{#if $documentStore.contents }
+<FileCard file={$documentStore} />
+<DocumentRenderer src={$documentStore.contents} />
 {/if}
 </main>
 
