@@ -12,6 +12,7 @@
   let pageNum = 1;        // default to the first page of the PDF.
   let pageRendering = false;
   let pageNumPending = null;
+  let hidePDFText = false;
 
 	import { afterUpdate, onMount, onDestroy } from 'svelte';
 	// well this bit is a crazy mess
@@ -157,9 +158,9 @@
 
   let replaceTextLayer = (node) => {
     let textLayer = ( node || document.createElement('div') );
-    let currentTextLayer = document.getElementById('text-layer');
+    let currentTextLayer = document.getElementById('pdfjs-text-layer');
     container.replaceChild(textLayer, currentTextLayer);
-    textLayer.id = 'text-layer';
+    textLayer.id = 'pdfjs-text-layer';
   };
 
 	onMount(async () => {
@@ -174,12 +175,19 @@
 <div class="page-wrapper">
   {#if pdfDoc }
     <header>
-      <button on:click|preventDefault={previousPage} >&lt;</button>
-      <p>Page {pageNum} of {pdfDoc.numPages}</p>
-      <button on:click|preventDefault={nextPage}>&gt;</button>
+      <nav>
+        <button on:click|preventDefault={previousPage} >&lt;</button>
+        <p>Page {pageNum} of {pdfDoc.numPages}</p>
+        <button on:click|preventDefault={nextPage}>&gt;</button>
+      </nav>
+      <button on:click|preventDefault={() => { hidePDFText = (! hidePDFText); } } >
+        {(hidePDFText) ? 'show' : 'hide' } pdfjs text
+      </button>
     </header>
-    <div class="display-wrapper" bind:this={container}>
-      <div id="text-layer"></div>
+    <div class="display-wrapper">
+      <div class="text-layer-wrapper" class:hide={hidePDFText} bind:this={container}>
+        <div id="pdfjs-text-layer"></div>
+      </div>
       <canvas bind:this={pageCanvas}></canvas>
     </div>
   {:else }
@@ -195,26 +203,35 @@
 
   .page-wrapper header {
     display: flex;
+    justify-content: space-between
+  }
+
+  .page-wrapper header nav {
+    display: flex;
   }
 
   .page-wrapper header p {
     vertical-align: middle;
   }
 
-  :global(#text-layer) { 
+  :global(#pdfjs-text-layer) { 
     position: absolute;
     overflow: hidden;
     opacity: 0.2;
     line-height: 1.0;
   }
   
-  :global(#text-layer) :global(span) {
+  :global(#pdfjs-text-layer) :global(span) {
     color: transparent;
     position: absolute;
     white-space: pre;
     cursor: text;
     transform-origin: 0% 0%;
     border: solid 1px black;
+  }
+
+  .text-layer-wrapper.hide {
+    display: none;
   }
 
 </style>
