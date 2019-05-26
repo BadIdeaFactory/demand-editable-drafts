@@ -5,8 +5,7 @@
 <style></style>
 
 <script>
-  import { afterChange } from 'svelte';
-
+  let file;
   let fileInput;
   let fileContents;
   export let accept;
@@ -35,10 +34,12 @@
 
   let onInputHandler = async () => {
     console.log("changing!");
+    file = getFile();
     fileContents = await readFile();
+    file.contents = fileContents
     if (onInput) { 
       console.log("Firing Change Handler");
-      onInput(fileContents);
+      onInput(file);
     }
   };
 </script>

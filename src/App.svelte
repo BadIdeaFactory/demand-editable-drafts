@@ -2,22 +2,24 @@
 
 <script>
 	import PageAnalyzer from './PageAnalyzer.svelte';
-	import PageRenderer from './PageRenderer.svelte';
+	import DocumentRenderer from './DocumentRenderer.svelte';
 	import FilePicker from './FilePicker.svelte'
+	import FileCard from './FileCard.svelte'
 	
 	export let picker;
-	export let fileContents;
+	export let file;
 
-	let pickerHandler = (contents)=>{
-		console.log(contents);
-		fileContents = contents;
+	let pickerHandler = (f)=>{
+		console.log(f);
+		file = f;
 	}
 </script>
 
 <main>
 <FilePicker accept={"application/pdf"} onInput={pickerHandler} />
-{#if fileContents}
-<PageRenderer src={fileContents} />
+{#if file }
+<FileCard file={file} />
+<DocumentRenderer src={file.contents} />
 {/if}
 </main>
 
