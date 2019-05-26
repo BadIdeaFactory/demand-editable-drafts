@@ -180,9 +180,11 @@
         <p>Page {pageNum} of {pdfDoc.numPages}</p>
         <button on:click|preventDefault={nextPage}>&gt;</button>
       </nav>
-      <button on:click|preventDefault={() => { hidePDFText = (! hidePDFText); } } >
-        {(hidePDFText) ? 'show' : 'hide' } pdfjs text
-      </button>
+      <nav>
+        <button on:click|preventDefault={() => { hidePDFText = (! hidePDFText); } } >
+          {(hidePDFText) ? 'show' : 'hide' } pdfjs text
+        </button>
+      </nav>
     </header>
     <div class="display-wrapper">
       <div class="text-layer-wrapper" class:hide={hidePDFText} bind:this={container}>
