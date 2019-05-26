@@ -24,9 +24,13 @@
     External API for manipulating pages.
   */
 
+ export function getPDF() {
+   return pdfDoc;
+ };
+
   export function getCanvas() {
     return pageCanvas;
-  }
+  };
 
   export async function getAttachments() {
     if (!page) { await getPage(pageNum); };
@@ -74,7 +78,9 @@
     if (!page) { await getPage(pageNum); };
     let items = await page.getTextContent();
     let textLayer = await document.createElement('div');
-    textLayer.style = `left: ${pageCanvas.offsetLeft}px; top: ${pageCanvas.offsetTop}px; height: ${pageCanvas.height}px; width: ${pageCanvas.width}px;`;
+    textLayer.style = `
+      height: ${pageCanvas.height}px; 
+      width: ${pageCanvas.width}px;`;
     replaceTextLayer(textLayer);
     // Just cheat by asking `pdfjs` to do it's default thing.
     // It'll draw a series of spans into the container
@@ -165,15 +171,17 @@
   onDestroy(() => { unloadDocument(); });
 </script>
 
-<div class="page-wrapper" bind:this={container}>
+<div class="page-wrapper">
   {#if pdfDoc }
     <header>
       <button on:click|preventDefault={previousPage} >&lt;</button>
       <p>Page {pageNum} of {pdfDoc.numPages}</p>
       <button on:click|preventDefault={nextPage}>&gt;</button>
     </header>
-    <canvas bind:this={pageCanvas}></canvas>
-    <div id="text-layer"></div>
+    <div class="display-wrapper" bind:this={container}>
+      <div id="text-layer"></div>
+      <canvas bind:this={pageCanvas}></canvas>
+    </div>
   {:else }
     <p>Waiting for Page</p>
   {/if}
@@ -195,10 +203,6 @@
 
   :global(#text-layer) { 
     position: absolute;
-    left: 0;
-    top: 0;
-    right: 0;
-    bottom: 0;
     overflow: hidden;
     opacity: 0.2;
     line-height: 1.0;
