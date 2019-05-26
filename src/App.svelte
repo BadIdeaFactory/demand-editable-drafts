@@ -1,7 +1,7 @@
 <svelte:options accessors={true}/>
 
 <script>
-	import PageAnalyzer from './PageAnalyzer.svelte';
+	import DocumentAnalyzer from './DocumentAnalyzer.svelte';
 	import DocumentRenderer from './DocumentRenderer.svelte';
 	import FilePicker from './FilePicker.svelte'
 	import FileCard from './FileCard.svelte'

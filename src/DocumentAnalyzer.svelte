@@ -1,14 +1,14 @@
 <svelte:options accessors={true}/>
 
 <script>
-  import PageRenderer from './PageRenderer.svelte';
+  import DocumentRenderer from './DocumentRenderer.svelte';
 
   export let src;
   export let currentPage;
 </script>
 
 <main>
-  <PageRenderer src={src} bind:this={currentPage} />
+  <DocumentRenderer src={src} bind:this={currentPage} />
   <section class="analysis">
     
   </section>
