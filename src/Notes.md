@@ -8,7 +8,17 @@ Using pdf.js as a component is a little bit messy.  It's not set up by default t
 
 Temporarily this is addressed by sucking the worker up using Rollup's CommonJS module into a separate worker file (which is how deployment is intended).
 
-The pdfjs core 
+- lol stop screwing around and just use pdfjs's built in renderTextLayer: https://usefulangle.com/post/90/javascript-pdfjs-enable-text-layer
+- A discussion of Ascenders, Descenders and Leading: http://pawlan.com/monica/articles/texttutorial/other.html
+- [Scaling the page to the desired number of pixels][document-scaling] requires getting the pdf's native width and then rescaling it.
+
+PDFjs lifecycle notes:
+
+- Loading a pdf requires the PDFjs web worker.
+- Flipping through the PDF is easy enough by using the pdfjs proxy object methods
+- There are a bunch of issues on github on destroying PDFs resulting in a memory leak.
+  - adding an `onDestroy` method to the `DocumentRenderer` to clean up the `pdfjs` worker, and destroy the document is the way to go.
+
 
 [pdfjs-instructions]: https://github.com/mozilla/pdf.js/wiki/Setup-pdf.js-in-a-website
 
@@ -17,6 +27,7 @@ The pdfjs core
 [hubgit-example]: https://gist.github.com/hubgit/600ec0c224481e910d2a0f883a7b98e3
 [issue-about-font-extraction]: https://github.com/mozilla/pdf.js/issues/7914
 [bananas-comment-about-bounding-boxes]: https://github.com/mozilla/pdf.js/issues/5643#issuecomment-69969258
+[document-scaling]: https://mozilla.github.io/pdf.js/examples/#rendering-the-page
 
 
 
