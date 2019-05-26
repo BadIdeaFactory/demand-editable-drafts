@@ -24,6 +24,10 @@
     External API for manipulating pages.
   */
 
+  export function getCanvas() {
+    return pageCanvas;
+  }
+
   export async function getAttachments() {
     if (!page) { await getPage(pageNum); };
     return await app.analyzer.currentPage.pdfDoc.getAttachments();
