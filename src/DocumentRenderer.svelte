@@ -14,7 +14,7 @@
   let pageNumPending = null;
   let hidePDFText = false;
   
-  import calculateStyles from './pdfjs-hax.js';
+  import TextCollection from './pdfjs-hax.js';
 	import { afterUpdate, onMount, onDestroy } from 'svelte';
 	// well this bit is a crazy mess
 	// See: https://github.com/mozilla/pdf.js/issues/10317
@@ -28,7 +28,8 @@
 
   export async function derp() {
     let text = await getText()
-    return calculateStyles(text, viewport, ctx);
+    let textCollection = new TextCollection(text, viewport, ctx);
+    return textCollection.calculateStyles();
   }
 
   export function getPDF() {

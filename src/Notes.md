@@ -75,6 +75,10 @@ Lines need to be grouped based on the similarity of text elements, and the dissi
 
 Okay, given the fact that we can inspect the output of the `pdf.js` text layer generator, we can reverse engineer its mechanisms for mapping text instructions in the PDF to positions on the canvas.
 
+Okay!  We've reverse engineered the text box positioning.  NOTE: this is not the same as the text _drawing_ code, in `pdf.js` the textLayer calculations and the visual rendering component are independent.
+
+
+
 # Annotated Bibliography
 
 ### Breuel, Thomas M., "[High Performance Document Layout Analysis][breuel-2003a]", 2003 ([pdf link][breuel-2003a-pdf])
