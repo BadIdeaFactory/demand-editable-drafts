@@ -1,6 +1,20 @@
 let styleBuf = ['left: ', 0, 'px; top: ', 0, 'px; font-size: ', 0,
 'px; font-family: ', '', ';'];
 
+// this is cribbed directly from pdf.js but is just basic
+// matrix math, so it shouldn't(?) change.
+// it's from /src/shared/util.js
+let Util_transform = (m1, m2) => {
+  return [
+    m1[0] * m2[0] + m1[2] * m2[1],
+    m1[1] * m2[0] + m1[3] * m2[1],
+    m1[0] * m2[2] + m1[2] * m2[3],
+    m1[1] * m2[2] + m1[3] * m2[3],
+    m1[0] * m2[4] + m1[2] * m2[5] + m1[4],
+    m1[1] * m2[4] + m1[3] * m2[5] + m1[5]
+  ];
+};
+
 let calculateStyle = (item, styles, viewport, context) => {
   // This is cribbed from the `appendText` function in text_layer.js
   // START `appendText`
@@ -9,16 +23,11 @@ let calculateStyle = (item, styles, viewport, context) => {
     style: null,
     angle: 0,
     canvasWidth: 0,
-    isWhitespace: false,
     originalTransform: null,
-    paddingBottom: 0,
-    paddingLeft: 0,
-    paddingRight: 0,
-    paddingTop: 0,
     scale: 1,
   };
 
-  let tx = Util.transform(viewport.transform, item.transform);
+  let tx = Util_transform(viewport.transform, item.transform);
   // 
   let angle = Math.atan2(tx[1], tx[0]);
   let style = styles[item.fontName];
@@ -66,9 +75,13 @@ let calculateStyle = (item, styles, viewport, context) => {
     // sits at tx[5].
   }
   styleBuf[1] = left;
+  textDivProperties.left = left;
   styleBuf[3] = top;
+  textDivProperties.top = top;
   styleBuf[5] = fontHeight;
+  textDivProperties.fontHeight = fontHeight;
   styleBuf[7] = style.fontFamily;
+  textDivProperties.fontFamily = style.fontFamily;
   textDivProperties.style = styleBuf.join('');
   textDiv.setAttribute('style', textDivProperties.style);
 
@@ -96,6 +109,7 @@ let calculateStyle = (item, styles, viewport, context) => {
   // if it differs between two text elements
   context.font = `${fontSize} ${fontFamily}`;
   let width = context.measureText(textDiv.textContent).width;
+  textDivProperties.width = width;
   let transform = '';
 
   if (textDivProperties.canvasWidth !== 0 && width > 0) {
@@ -113,7 +127,18 @@ let calculateStyle = (item, styles, viewport, context) => {
     textDiv.style.transform = transform;
   }
 
+  // what i want: left, top, angle, scale, height, width, font-size, font-family
   return textDivProperties;
 };
 
-export default { calculateStyle };
+let calculateStyles = (text, viewport, context) => {
+  // text should be the result of `page.getTextContent`
+  let styles = text.styles;
+  let items = text.items;
+  items.forEach((item) => {
+    item.cssStyles = calculateStyle(item, styles, viewport, context);
+  });
+  return text;
+};
+
+export default calculateStyles;
