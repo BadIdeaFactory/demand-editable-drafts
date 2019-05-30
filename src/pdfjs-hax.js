@@ -17,7 +17,9 @@
     line height and spacing.
 
 */
+
 class TextCollection {
+
   constructor(text, viewport, context) {
     this.styles = text.styles;
     this.items = text.items;
@@ -25,6 +27,13 @@ class TextCollection {
     this.context = context;
     this.styleBuf = ['left: ', 0, 'px; top: ', 0, 'px; font-size: ', 0,
 'px; font-family: ', '', ';'];
+
+    let colors = ["Silver", "Gray", "Black", "Red", "Maroon", "Yellow", "Olive", 
+    "Lime", "Green", "Aqua", "Teal", "Blue", "Navy", "Fuchsia", "Purple"];
+    Object.values(this.styles).forEach((style) => {
+      let color = colors.splice(Math.floor(Math.random()*colors.length), 1);
+      style.color = color;
+    });
   }
 
   matrix_transform(m1, m2){
@@ -151,6 +160,8 @@ class TextCollection {
       textDiv.style.transform = transform;
     }
     
+    textDiv.classList.add(item.fontName);
+    textDiv.style.borderColor = style.color;
     item.element = textDiv;
     // what i want: left, top, angle, scale, height, width, font-size, font-family
     return textDivProperties;
