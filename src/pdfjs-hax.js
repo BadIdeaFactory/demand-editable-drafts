@@ -25,6 +25,9 @@ class TextCollection {
     this.items = text.items;
     this.viewport = viewport;
     this.context = context;
+
+    this.groups = [];
+
     this.styleBuf = ['left: ', 0, 'px; top: ', 0, 'px; font-size: ', 0,
 'px; font-family: ', '', ';'];
 
@@ -168,9 +171,24 @@ class TextCollection {
   }
 
   appendTextElementsTo(textLayer) {
-    this.items.forEach((item)=>{
+    this.sort().forEach((item)=>{
       textLayer.appendChild(item.element);
     });
+  }
+
+  sort(){
+    let orderByTopLeft = (a, b) => {
+      // if the y coordinates are the same
+      if (a.cssStyles.top == b.cssStyles.top) { 
+        // determine what the x position is
+        return a.cssStyles.left - b.cssStyles.left;
+      } else {
+        // otherwise just sort these two points based on the y.
+        return a.cssStyles.top - b.cssStyles.top;
+      }
+    };
+
+    return this.items.sort(orderByTopLeft);
   }
 
   calculateStyles(){
