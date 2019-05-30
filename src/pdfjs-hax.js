@@ -1,3 +1,22 @@
+
+/*
+  ToDos:
+    - topologically sort the text elements
+    - create a class for individual text elements & their fields
+    - use canvas to calculate the space of a width and other things for layout analysis
+    - group text into lines
+    - group lines into paragraphs
+    - identify table-ish things
+
+  Notes:
+
+    Much of the calculations for what is/isn't a line or paragraph is going to have to be
+    inferred based on heuristics to start with (lol maybe a neural network later).  
+    So, helpfully, it should be possible to calculate the width of a space in the various 
+    different fonts on the page.  Likewise it should be possible to calculate the average 
+    line height and spacing.
+
+*/
 class TextCollection {
   constructor(text, viewport, context) {
     this.styles = text.styles;
@@ -128,11 +147,19 @@ class TextCollection {
     //// set the transform into the styles if there are any.
     if (transform.length > 0) {
       textDivProperties.originalTransform = transform;
+      textDivProperties.style = `${textDivProperties.style} transform: ${transform};`;
       textDiv.style.transform = transform;
     }
-  
+    
+    item.element = textDiv;
     // what i want: left, top, angle, scale, height, width, font-size, font-family
     return textDivProperties;
+  }
+
+  appendTextElementsTo(textLayer) {
+    this.items.forEach((item)=>{
+      textLayer.appendChild(item.element);
+    });
   }
 
   calculateStyles(){

@@ -26,10 +26,19 @@
     External API for manipulating pages.
   */
 
-  export async function derp() {
-    let text = await getText()
+  export async function drawTextBounds() {
+    let text = await getText();
     let textCollection = new TextCollection(text, viewport, ctx);
-    return textCollection.calculateStyles();
+    textCollection.calculateStyles();
+
+    let textLayer = await document.createElement('div');
+    textLayer.style = `
+      height: ${pageCanvas.height}px; 
+      width: ${pageCanvas.width}px;`;
+
+    textCollection.appendTextElementsTo(textLayer);
+    replaceTextLayer(textLayer);
+    return textCollection;
   }
 
   export function getPDF() {
@@ -82,7 +91,7 @@
     return await getPageText(pageNum);
   };
 
-  export async function drawTextBounds(itemNumber) {
+  export async function pdfJSDrawTextBounds(itemNumber) {
     if (!page) { await getPage(pageNum); };
     let items = await page.getTextContent();
     let textLayer = await document.createElement('div');
