@@ -63,7 +63,8 @@ class TextCollection {
           return a.cssStyles.top - b.cssStyles.top;
         }
       },
-      orderByLeft: (a, b) => a.cssStyles.left - b.cssStyles.left
+      orderByLeft: (a, b) => a.cssStyles.left - b.cssStyles.left,
+
     };
   }
 
@@ -264,7 +265,7 @@ class TextCollection {
     // each group has a top and a bottom bound which is the accumulation of
     // the bounds of all of its elements.
     this.groups = [];
-    let candidates = this.items.sort();
+    let candidates = this.sort();
     let alreadyGrouped = [];
 
     candidates.forEach((item) => {
@@ -304,9 +305,6 @@ class TextCollection {
       }
     });
 
-    this.groups = this.groups.sort((a, b) => {
-      return a.top - b.top;
-    });
     return this.groups;
   }
 
