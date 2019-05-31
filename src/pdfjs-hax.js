@@ -43,19 +43,19 @@ class TextCollection {
     this.groups = [];
 
     this.styleBuf = ['left: ', 0, 'px; top: ', 0, 'px; font-size: ', 0,
-'px; font-family: ', '', ';'];
+      'px; font-family: ', '', ';'];
 
-    let colors = ["Silver", "Gray", "Black", "Red", "Maroon", "Yellow", "Olive", 
-    "Lime", "Green", "Aqua", "Teal", "Blue", "Navy", "Fuchsia", "Purple"];
+    let colors = ["Silver", "Gray", "Black", "Red", "Maroon", "Yellow", "Olive",
+      "Lime", "Green", "Aqua", "Teal", "Blue", "Navy", "Fuchsia", "Purple"];
     Object.values(this.styles).forEach((style) => {
-      let color = colors.splice(Math.floor(Math.random()*colors.length), 1);
+      let color = colors.splice(Math.floor(Math.random() * colors.length), 1);
       style.color = color;
     });
 
     this._sorters = {
       orderByTopLeft: (a, b) => {
         // if the y coordinates are the same
-        if (a.cssStyles.top == b.cssStyles.top) { 
+        if (a.cssStyles.top == b.cssStyles.top) {
           // determine what the x position is
           return a.cssStyles.left - b.cssStyles.left;
         } else {
@@ -68,7 +68,7 @@ class TextCollection {
   }
 
   // Cribbed from pdfjs utils
-  matrix_transform(m1, m2){
+  matrix_transform(m1, m2) {
     return [
       m1[0] * m2[0] + m1[2] * m2[1],
       m1[1] * m2[0] + m1[3] * m2[1],
@@ -92,7 +92,7 @@ class TextCollection {
       originalTransform: null,
       scale: 1,
     };
-  
+
     let tx = this.matrix_transform(viewport.transform, item.transform);
     // 
     let angle = Math.atan2(tx[1], tx[0]);
@@ -112,7 +112,7 @@ class TextCollection {
       // otherwise if the descent is specified modify by that.
       fontAscent = (1 + style.descent) * fontAscent;
     }
-  
+
     let left;
     let top;
     if (angle === 0) {
@@ -154,7 +154,7 @@ class TextCollection {
 
     textDivProperties.style = this.styleBuf.join('');
     textDiv.setAttribute('style', textDivProperties.style);
-  
+
     textDiv.textContent = item.str;
     // `fontName` is only used by the FontInspector, and we only use `dataset`
     // here to make the font name available in the debugger.
@@ -171,10 +171,10 @@ class TextCollection {
     }
     // END `appendText`
     // START `_layoutText`
-  
+
     let fontSize = textDiv.style.fontSize;
     let fontFamily = textDiv.style.fontFamily;
-  
+
     // pdf.js batches this and only set the font
     // if it differs between two text elements
     context.font = `${fontSize} ${fontFamily}`;
@@ -184,7 +184,7 @@ class TextCollection {
     style.fontHeight = fontHeight;
 
     let transform = '';
-  
+
     if (textDivProperties.canvasWidth !== 0 && width > 0) {
       //// the scale is equal to the proportion of the `canvasWidth` to the calculated `width`
       textDivProperties.scale = textDivProperties.canvasWidth / width;
@@ -200,7 +200,7 @@ class TextCollection {
       textDivProperties.style = `${textDivProperties.style} transform: ${transform};`;
       textDiv.style.transform = transform;
     }
-    
+
     textDiv.classList.add(item.fontName);
     textDiv.style.borderColor = style.color;
     item.element = textDiv;
@@ -208,13 +208,22 @@ class TextCollection {
     return textDivProperties;
   }
 
+  calculateStyles() {
+    // text should be the result of `page.getTextContent`
+    this.items.forEach((item) => {
+      item.cssStyles = this.calculateItem(item, this.styles, this.viewport, this.context);
+    });
+    return { items: this.items, styles: this.styles };
+  }
+
   appendTextElementsTo(textLayer) {
-    this.sort().forEach((item)=>{
-      textLayer.appendChild(item.element);
+    this.groupTextIntoLines();
+    this.groups.forEach((group) => {
+      group.items.forEach((item) => textLayer.appendChild(item.element));
     });
   }
 
-  sort(){
+  sort() {
     return this.items.sort(this._sorters["orderByTopLeft"]);
   }
 
@@ -254,11 +263,12 @@ class TextCollection {
 
     // each group has a top and a bottom bound which is the accumulation of
     // the bounds of all of its elements.
+    this.groups = [];
     let candidates = this.items.sort();
     let alreadyGrouped = [];
 
     candidates.forEach((item) => {
-      if (!alreadyGrouped.includes(item)){
+      if (!alreadyGrouped.includes(item)) {
         // seed the overlap with the initial element
         let overlap = {
           top: item.cssStyles.top,
@@ -272,9 +282,9 @@ class TextCollection {
         };
 
         // loop through all of the items
-        candidates.forEach((second) => { 
+        candidates.forEach((second) => {
           let secondBounds = {
-            top: second.cssStyles.top, 
+            top: second.cssStyles.top,
             bottom: second.cssStyles.top + second.cssStyles.fontHeight
           };
 
@@ -282,13 +292,14 @@ class TextCollection {
           if (!alreadyGrouped.includes(second) && elementsOverlap(overlap, secondBounds)) {
             overlap.items.push(second);
             alreadyGrouped.push(second);
-            overlap.top    = Math.min(overlap.top, secondBounds.top);
+            overlap.top = Math.min(overlap.top, secondBounds.top);
             overlap.bottom = Math.max(overlap.bottom, secondBounds.bottom);
           }
 
         });
 
-        overlap.text = overlap.items.sort(this._sorters.orderByLeft).map((i)=>i.str);
+        overlap.items = overlap.items.sort(this._sorters.orderByLeft);
+        overlap.text = overlap.items.map((i) => i.str);
         this.groups.push(overlap);
       }
     });
@@ -296,12 +307,40 @@ class TextCollection {
     return this.groups;
   }
 
-  calculateStyles(){
-    // text should be the result of `page.getTextContent`
-    this.items.forEach((item) => {
-      item.cssStyles = this.calculateItem(item, this.styles, this.viewport, this.context);
-    });
-    return {items: this.items, styles:this.styles};
+  dumpText() {
+    return this.groupTextIntoLines().map((group) => {
+      let text = [];
+      let insertSpaces = (item, index) => {
+        text.push(item.str);
+        let nextItem = group.items[index + 1];
+
+        let spaceNeededBetween = (first, second) => {
+
+          let firstFont = this.styles[first.fontName];
+          let secondFont = this.styles[second.fontName];
+          let widthOfSpace = Math.min(firstFont.spaceWidth, secondFont.spaceWidth);
+
+          let firstRight = first.element.offsetWidth + first.element.offsetLeft;
+          console.log(firstRight, first.cssStyles.width + first.cssStyles.left);
+          // (b.left - a.right) > widthOfSpace
+          //if ((second.cssStyles.left - firstRight) >= (widthOfSpace)) { debugger; }
+
+          return (second.element.offsetLeft - firstRight) >= (widthOfSpace);
+        };
+
+        if (nextItem && spaceNeededBetween(item, nextItem)) { 
+          text.push(" "); 
+        }
+      };
+      group.items.forEach(insertSpaces);
+      let line = this.mungeLine(text.join(''));
+      return line;
+    }).join('\n');
+  }
+
+  mungeLine(line){
+    // /(‘‘)(\w+)/
+    return line;
   }
 }
 
