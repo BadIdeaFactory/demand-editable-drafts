@@ -257,8 +257,7 @@ class TextCollection {
     let candidates = this.items.sort();
     let alreadyGrouped = [];
 
-    while (candidates.length > 0) {
-      let item = candidates.shift();
+    candidates.forEach((item) => {
       if (!alreadyGrouped.includes(item)){
         // seed the overlap with the initial element
         let overlap = {
@@ -292,7 +291,7 @@ class TextCollection {
         overlap.text = overlap.items.sort(this._sorters.orderByLeft).map((i)=>i.str);
         this.groups.push(overlap);
       }
-    }
+    });
 
     return this.groups;
   }
