@@ -83,7 +83,8 @@
     page = await pdfDoc.getPage(num);
     viewport = page.getViewport({scale: scale});
     await renderPage(pageNum);
-    await drawTextBounds();
+    let pageText = await drawTextBounds();
+    console.log(pageText.dumpText());
   };
 
   export async function getText() {
