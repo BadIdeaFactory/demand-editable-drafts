@@ -16,6 +16,20 @@
     different fonts on the page.  Likewise it should be possible to calculate the average 
     line height and spacing.
 
+    Font heights and the space of a width can be calculated per `pdfjs` font style.
+
+    Two elements can be merged if they are horizontally adjacent to each other by a space
+    that is <= the width of a space
+
+    Text elements should be hierarchically clustered.  Generally speaking we know that
+    documents are grouped into lines (e.g. elements which share a `y` position w/in some
+    tolerance) are on the same line (although clustering may be blocked by higher level
+    organization, such as column breaks).
+
+    Thus, clustering can operate by first scanning the document from top to bottom and
+    breaking the document into lines.  From there, lines can be clustered into blocks.
+    Blocks should 
+
 */
 
 class TextCollection {
@@ -39,6 +53,7 @@ class TextCollection {
     });
   }
 
+  // Cribbed from pdfjs utils
   matrix_transform(m1, m2){
     return [
       m1[0] * m2[0] + m1[2] * m2[1],
@@ -50,6 +65,8 @@ class TextCollection {
     ];
   }
 
+  // Frankensteined together from pdf.js's text_layer.js methods: 
+  //   appendText and _layoutText
   calculateItem(item, styles, viewport, context) {
     // This is cribbed from the `appendText` function in text_layer.js
     // START `appendText`
@@ -111,12 +128,16 @@ class TextCollection {
     }
     this.styleBuf[1] = left;
     textDivProperties.left = left;
+
     this.styleBuf[3] = top;
     textDivProperties.top = top;
+
     this.styleBuf[5] = fontHeight;
     textDivProperties.fontHeight = fontHeight;
+
     this.styleBuf[7] = style.fontFamily;
     textDivProperties.fontFamily = style.fontFamily;
+
     textDivProperties.style = this.styleBuf.join('');
     textDiv.setAttribute('style', textDivProperties.style);
   
@@ -145,6 +166,9 @@ class TextCollection {
     context.font = `${fontSize} ${fontFamily}`;
     let width = context.measureText(textDiv.textContent).width;
     textDivProperties.width = width;
+    style.spaceWidth = context.measureText(" ").width;
+    style.fontHeight = fontHeight;
+
     let transform = '';
   
     if (textDivProperties.canvasWidth !== 0 && width > 0) {
@@ -189,6 +213,9 @@ class TextCollection {
     };
 
     return this.items.sort(orderByTopLeft);
+  }
+
+  groupTextIntoLines() {
   }
 
   calculateStyles(){
