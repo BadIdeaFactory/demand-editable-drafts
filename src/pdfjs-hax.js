@@ -261,7 +261,8 @@ class TextCollection {
       let overlap = {
         top: item.cssStyles.top,
         bottom: item.cssStyles.top + item.cssStyles.fontHeight,
-        items: [item]
+        items: [item],
+        text: [item.str]
       };
 
       let elementsOverlap = (a, b) => {
@@ -269,7 +270,7 @@ class TextCollection {
       };
 
       // loop through all of the items
-      this.items.forEach((second) => { 
+      candidates.forEach((second) => { 
         let secondBounds = {
           top: second.cssStyles.top, 
           bottom: second.cssStyles.top + second.cssStyles.fontHeight
@@ -278,6 +279,7 @@ class TextCollection {
         // check to make sure the element hasn't already been included
         if (!overlap.items.includes(second) && elementsOverlap(overlap, secondBounds)) {
           overlap.items.push(second);
+          overlap.text.push(second.str);
           overlap.top    = Math.min(overlap.top, secondBounds.top);
           overlap.bottom = Math.max(overlap.bottom, secondBounds.bottom);
         }
