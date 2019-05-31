@@ -304,6 +304,9 @@ class TextCollection {
       }
     });
 
+    this.groups = this.groups.sort((a, b) => {
+      return a.top - b.top;
+    });
     return this.groups;
   }
 
@@ -321,15 +324,19 @@ class TextCollection {
           let widthOfSpace = Math.min(firstFont.spaceWidth, secondFont.spaceWidth);
 
           let firstRight = first.element.offsetWidth + first.element.offsetLeft;
-          console.log(firstRight, first.cssStyles.width + first.cssStyles.left);
+          //console.log(firstRight, first.cssStyles.width + first.cssStyles.left);
           // (b.left - a.right) > widthOfSpace
-          //if ((second.cssStyles.left - firstRight) >= (widthOfSpace)) { debugger; }
+          if ((second.element.offsetLeft - firstRight) >= (widthOfSpace)) { 
+            //debugger;
+            //console.log(first.element, second.element);
+            //console.log(second.element.offsetLeft - firstRight, widthOfSpace);
+          }
 
           return (second.element.offsetLeft - firstRight) >= (widthOfSpace);
         };
 
-        if (nextItem && spaceNeededBetween(item, nextItem)) { 
-          text.push(" "); 
+        if (nextItem && spaceNeededBetween(item, nextItem)) {
+          text.push(" ");
         }
       };
       group.items.forEach(insertSpaces);
