@@ -14,7 +14,7 @@
   let pageNumPending = null;
   let hidePDFText = false;
   
-  import TextCollection from './pdfjs-hax.js';
+  import TextCollection from './text-collection.js';
 	import { afterUpdate, onMount, onDestroy } from 'svelte';
 	// well this bit is a crazy mess
 	// See: https://github.com/mozilla/pdf.js/issues/10317
