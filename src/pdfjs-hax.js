@@ -51,6 +51,19 @@ class TextCollection {
       let color = colors.splice(Math.floor(Math.random()*colors.length), 1);
       style.color = color;
     });
+
+    this._sorters = {
+      orderByTopLeft: (a, b) => {
+        // if the y coordinates are the same
+        if (a.cssStyles.top == b.cssStyles.top) { 
+          // determine what the x position is
+          return a.cssStyles.left - b.cssStyles.left;
+        } else {
+          // otherwise just sort these two points based on the y.
+          return a.cssStyles.top - b.cssStyles.top;
+        }
+      }
+    };
   }
 
   // Cribbed from pdfjs utils
@@ -201,21 +214,79 @@ class TextCollection {
   }
 
   sort(){
-    let orderByTopLeft = (a, b) => {
-      // if the y coordinates are the same
-      if (a.cssStyles.top == b.cssStyles.top) { 
-        // determine what the x position is
-        return a.cssStyles.left - b.cssStyles.left;
-      } else {
-        // otherwise just sort these two points based on the y.
-        return a.cssStyles.top - b.cssStyles.top;
-      }
-    };
-
-    return this.items.sort(orderByTopLeft);
+    return this.items.sort(this._sorters["orderByTopLeft"]);
   }
 
   groupTextIntoLines() {
+    // if multiple elements overlap in the Y direction
+    // we should calculate whether all of the chunks belong together.
+    //
+    // what's an overlap in the Y direction?
+    // numbers: a.top, a.fontHeight, b.top, b.fontHeight
+
+    /* 
+      A contains B
+      a.top < b.top AND a.bottom > b.bottom
+
+      B contains A
+      a.top > b.top AND a.bottom < b.bottom
+
+      A overlaps but is higher than B
+      a.top < b.top AND a.bottom < b.bottom
+
+      A overlaps but is lower than B
+      a.top > b.top AND a.bottom > b.bottom
+      ---------------------------------------
+
+      So we can detect things that are NOT overlaps.
+      Since we know that the top & bottom for each element
+      are strictly ordered, we can just find the circumstances
+      where the bottom of one element is higher than the other
+      and visa versa.
+
+      A is higher than and does not overlap B
+      a.bottom < b.top
+
+      A is lower than and does not overlap B
+      a.top > b.bottom
+    */
+
+    // each group has a top and a bottom bound which is the accumulation of
+    // the bounds of all of its elements.
+    let groups = [];
+    let candidates = this.items.sort();
+
+    candidates.forEach((item)=>{
+      // seed the overlap with the initial element
+      let overlap = {
+        top: item.cssStyles.top,
+        bottom: item.cssStyles.top + item.cssStyles.fontHeight,
+        items: [item]
+      };
+
+      let elementsOverlap = (a, b) => {
+        return !(a.bottom < b.top || a.top > b.bottom);
+      };
+
+      // loop through all of the items
+      this.items.forEach((second) => { 
+        let secondBounds = {
+          top: second.cssStyles.top, 
+          bottom: second.cssStyles.top + second.cssStyles.fontHeight
+        };
+
+        // check to make sure the element hasn't already been included
+        if (!overlap.items.includes(second) && elementsOverlap(overlap, secondBounds)) {
+          overlap.items.push(second);
+          overlap.top    = Math.min(overlap.top, secondBounds.top);
+          overlap.bottom = Math.max(overlap.bottom, secondBounds.bottom);
+        }
+      });
+
+      groups.push(overlap);
+    });
+
+    return groups;
   }
 
   calculateStyles(){
