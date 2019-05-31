@@ -62,7 +62,8 @@ class TextCollection {
           // otherwise just sort these two points based on the y.
           return a.cssStyles.top - b.cssStyles.top;
         }
-      }
+      },
+      orderByLeft: (a, b) => a.cssStyles.left - b.cssStyles.left
     };
   }
 
@@ -253,42 +254,47 @@ class TextCollection {
 
     // each group has a top and a bottom bound which is the accumulation of
     // the bounds of all of its elements.
-    let groups = [];
     let candidates = this.items.sort();
+    let alreadyGrouped = [];
 
-    candidates.forEach((item)=>{
-      // seed the overlap with the initial element
-      let overlap = {
-        top: item.cssStyles.top,
-        bottom: item.cssStyles.top + item.cssStyles.fontHeight,
-        items: [item],
-        text: [item.str]
-      };
+    while (candidates.length > 0) {
+      let item = candidates.shift();
+      if (!alreadyGrouped.includes(item)){
+        // seed the overlap with the initial element
+        let overlap = {
+          top: item.cssStyles.top,
+          bottom: item.cssStyles.top + item.cssStyles.fontHeight,
+          items: [item],
+        };
+        alreadyGrouped.push(item);
 
-      let elementsOverlap = (a, b) => {
-        return !(a.bottom < b.top || a.top > b.bottom);
-      };
-
-      // loop through all of the items
-      candidates.forEach((second) => { 
-        let secondBounds = {
-          top: second.cssStyles.top, 
-          bottom: second.cssStyles.top + second.cssStyles.fontHeight
+        let elementsOverlap = (a, b) => {
+          return !(a.bottom < b.top || a.top > b.bottom);
         };
 
-        // check to make sure the element hasn't already been included
-        if (!overlap.items.includes(second) && elementsOverlap(overlap, secondBounds)) {
-          overlap.items.push(second);
-          overlap.text.push(second.str);
-          overlap.top    = Math.min(overlap.top, secondBounds.top);
-          overlap.bottom = Math.max(overlap.bottom, secondBounds.bottom);
-        }
-      });
+        // loop through all of the items
+        candidates.forEach((second) => { 
+          let secondBounds = {
+            top: second.cssStyles.top, 
+            bottom: second.cssStyles.top + second.cssStyles.fontHeight
+          };
 
-      groups.push(overlap);
-    });
+          // check to make sure the element hasn't already been included
+          if (!alreadyGrouped.includes(second) && elementsOverlap(overlap, secondBounds)) {
+            overlap.items.push(second);
+            alreadyGrouped.push(second);
+            overlap.top    = Math.min(overlap.top, secondBounds.top);
+            overlap.bottom = Math.max(overlap.bottom, secondBounds.bottom);
+          }
 
-    return groups;
+        });
+
+        overlap.text = overlap.items.sort(this._sorters.orderByLeft).map((i)=>i.str);
+        this.groups.push(overlap);
+      }
+    }
+
+    return this.groups;
   }
 
   calculateStyles(){
