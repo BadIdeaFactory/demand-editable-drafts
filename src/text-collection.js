@@ -31,6 +31,8 @@
     Blocks should 
 
 */
+import docx from 'docx';
+import FileSaver from 'file-saver';
 
 class TextCollection {
 
@@ -337,9 +339,9 @@ class TextCollection {
         }
         return items;
       };
-      let text = group.items.reduce(insertSpaces, []);
+      let textItems = group.items.reduce(insertSpaces, []);
 
-      let line = this.mungeLine(text.join(''));
+      let line = this.mungeLine(textItems.join(''));
       return line;
     }).join('\n');
   }
@@ -347,6 +349,20 @@ class TextCollection {
   mungeLine(line){
     // /(‘‘)(\w+)/
     return line;
+  }
+
+  async dumpDocX() {
+    let doc = new docx.Document();
+    let paragraph = new docx.Paragraph(this.dumpText());
+    doc.addParagraph(paragraph);
+
+    let packer = new docx.Packer();
+    let docBuffer = await packer.toBuffer(doc);
+    let blob = new Blob(
+      [docBuffer], 
+      {type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'}
+    );
+    FileSaver.saveAs(blob, "derp.docx");
   }
 }
 
