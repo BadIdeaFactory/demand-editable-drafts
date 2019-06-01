@@ -310,9 +310,8 @@ class TextCollection {
 
   dumpText() {
     return this.groupTextIntoLines().map((group) => {
-      let text = [];
-      let insertSpaces = (item, index) => {
-        text.push(item.str);
+      let insertSpaces = (items, item, index) => {
+        items.push(item.str);
         let nextItem = group.items[index + 1];
 
         let spaceNeededBetween = (first, second) => {
@@ -334,10 +333,12 @@ class TextCollection {
         };
 
         if (nextItem && spaceNeededBetween(item, nextItem)) {
-          text.push(" ");
+          items.push(" ");
         }
+        return items;
       };
-      group.items.forEach(insertSpaces);
+      let text = group.items.reduce(insertSpaces, []);
+
       let line = this.mungeLine(text.join(''));
       return line;
     }).join('\n');
