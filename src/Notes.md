@@ -65,11 +65,13 @@ Lines need to be grouped based on the similarity of text elements, and the dissi
 - whitespace: (consistency of column and margin space)
 - orientation of lines.
 
-### Component analyzers:
+### Content analyzers:
 
+- Paragraph identifiers
 - List identifiers
 - line number identifiers
 - Table of contents identifiers
+- SmallCaps identifiers
 
 ### pdf.js
 
@@ -77,14 +79,32 @@ Okay, given the fact that we can inspect the output of the `pdf.js` text layer g
 
 Okay!  We've reverse engineered the text box positioning.  NOTE: this is not the same as the text _drawing_ code, in `pdf.js` the textLayer calculations and the visual rendering component are independent.
 
+### Region analysis
 
+The first thing we've implemented is a line grouping algorithm.  It's a greedy algorithm which scans all elements from top to bottom, and groups them based on whether the elements overlap (and overlap should be transitive).
+
+The elements in each group are then ordered by their left position.  In some cases elements are neighbors but are separated by a gap rather than a space.  In such an event a space is inserted between them.  This structure works fine for ordering the text elements in a document from top left to bottom right.  However it has some shortcomings for our purposes.
+
+First, the heading of each bill contains the bill title in the largest boldest font in the document.  Immediately to the left of the bill title is a block of smallcaps text designating which number congress and which session the bill is from.  The bill title text is large enough that it overlaps to both lines of the session information.
+
+Second, main bill text is marked with line numbers, and those line numbers form a single column to the left of the main text.  Simply mashing all of the text that share a line together means that the line number ends up prepended to the main bill text.
+
+Third, concatenating text items together loses information about indentation.
+
+All three of these concerns should be resolveable through the mechanism outlined in [Breuel 2003a][].  A basic outline of the technique is to find the largest vertically oriented white space that separates text elements.
+
+### Congressional style
+
+#### Paragraphs
+
+Paragraphs always begin with an inden
 
 # Annotated Bibliography
 
-### Breuel, Thomas M., "[High Performance Document Layout Analysis][breuel-2003a]", 2003 ([pdf link][breuel-2003a-pdf])
+### Breuel, Thomas M., "[High Performance Document Layout Analysis][Breuel 2003a]", 2003 ([pdf link][Breuel 2003a pdf])
 
-[breuel-2003a]: https://www.semanticscholar.org/paper/High-Performance-Document-Layout-Analysis-Breuel/0acbc8706cb3e5a43141a03342ded6025a7eb60c
-[breuel-2003a-pdf]: https://pdfs.semanticscholar.org/0a78/09043fe4f50da53163d1fd318754c5f259e6.pdf
+[breuel 2003a]: https://www.semanticscholar.org/paper/High-Performance-Document-Layout-Analysis-Breuel/0acbc8706cb3e5a43141a03342ded6025a7eb60c
+[Breuel 2003a pdf]: https://pdfs.semanticscholar.org/0a78/09043fe4f50da53163d1fd318754c5f259e6.pdf
 
 This paper has some key observations despite being 16 years old.  It uses a variety of approaches composed into a single layout analysis system.
 
