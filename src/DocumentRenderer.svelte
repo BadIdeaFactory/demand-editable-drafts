@@ -8,7 +8,7 @@
   let container;   // the container element for our various elements.
   let pageCanvas;  // the canvas element the viewport is drawn into
   let ctx;                // the canvas context object
-  let scale = 2;        // the presentational scale for the page
+  let scale = 1.3;        // the presentational scale for the page
   let pageNum = 1;        // default to the first page of the PDF.
   let pageRendering = false;
   let pageNumPending = null;

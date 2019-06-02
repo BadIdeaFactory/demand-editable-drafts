@@ -230,6 +230,163 @@ class TextCollection {
     return this.items.sort(this._sorters["orderByTopLeft"]);
   }
 
+  // this function should be elsewhere, but whatevs.
+  draw(rect, color="blue") {
+    this.context.strokeStyle = color;
+    this.context.setLineDash([6]);
+    this.context.strokeRect(rect.left, rect.top, rect.right-rect.left, rect.bottom-rect.top);
+  }
+
+  findWhiteSpace() {
+    /*
+      Extracted from Breuel2002.
+
+      def find_whitespace(bound,rectangles):
+          queue.enqueue(quality(bound),bound,rectangles)
+          while not queue.is_empty():
+              (q,r,obstacles) = queue.dequeue_max()
+              if obstacles==[]:
+                  return r
+              pivot = pick(obstacles)
+              r0 = (pivot.x1,r.y0,r.x1,r.y1)
+              r1 = (r.x0,r.y0,pivot.x0,r.y1)
+              r2 = (r.x0,pivot.y1,r.x1,r.y1)
+              r3 = (r.x0,r.y0,r.x1,pivot.y0)
+              subrectangles = [r0,r1,r2,r3]
+              for sub_r in subrectangles:
+                  sub_q = quality(sub_r)
+                  sub_obstacles =
+                      [list of u in obstacles if not overlaps(u,sub_r)]
+                  queue.enqueue(sub_q,sub_r,sub_obstacles)
+    */
+
+    // The center of a rectangle is the midpoint of the edges.
+    let findCenter = (rectangle) => {
+      return {
+        x: (rectangle.right  - rectangle.left)/2 + rectangle.left,
+        y: (rectangle.bottom - rectangle.top)/2 + rectangle.top
+      };
+    };
+
+    // Since this algorithm is a divide & conquer search
+    // it recommends starting with a candidate element
+    // that will divide the space most effectively.
+    //
+    // So finding the pivot element will just be identifying
+    // the element with its center closest to the bounding box's.
+    let findPivot = (bounds, candidates) => {
+      // grab the first element
+      let mostCentered;
+      candidates.forEach((item)=>{
+        let candidateDistance = Math.hypot(
+          item.center.x - bounds.center.x, 
+          item.center.y - bounds.center.y
+        );
+        item.center.distanceToBoundsCenter = candidateDistance;
+
+        if (!mostCentered || candidateDistance < mostCentered.center.distanceToBoundsCenter ) {
+          mostCentered = item;
+        }
+      });
+      return mostCentered;
+    };
+
+    // turn all of the items into bounding boxes
+    // defined by their css measured dimensions.
+    let elements = this.sort().map((item) => {
+      let bounds = {
+        top: item.element.offsetTop,
+        bottom: item.element.offsetTop + item.element.offsetHeight,
+        left: item.element.offsetLeft,
+        right: item.element.offsetLeft + item.element.offsetWidth*item.cssStyles.scale,
+      };
+      // don't forget to include the center.
+      bounds.center = findCenter(bounds);
+      return bounds;
+    });
+
+    // We're using the canvas as the initial bounding box.
+    let canvasBounds = {
+      top: 0,
+      bottom: this.context.canvas.height,
+      left: 0,
+      right: this.context.canvas.width,
+      elements: elements,
+    };
+
+        // debugging code
+    // don't forget it's center either.
+    canvasBounds.center = findCenter(canvasBounds);
+    let queue = [canvasBounds];
+    let whiteSpaces = [];
+    while (queue.length > 0) {
+      console.log({queue: queue.length, whiteSpaces: whiteSpaces.length});
+      if (queue.length > 10000) { break; }
+      // get the next region to search
+      let bounds = queue.shift();
+      if (bounds.elements.length < 1) { whiteSpaces.push(bounds); break; }
+      // find the element that divides the region most evenly
+      let pivot = findPivot(bounds, bounds.elements);
+
+      let upperRegion = { top: bounds.top,   bottom: pivot.top,     left: bounds.left, right: bounds.right };
+      let lowerRegion = { top: pivot.bottom, bottom: bounds.bottom, left: bounds.left, right: bounds.right };
+      let leftRegion  = { top: bounds.top,   bottom: bounds.bottom, left: bounds.left, right: pivot.left }; 
+      let rightRegion = { top: bounds.top,   bottom: bounds.bottom, left: pivot.right, right: bounds.right };
+      let regions = [upperRegion, lowerRegion, leftRegion, rightRegion];
+
+      let intersects = (first, second) => {
+        return (
+          !(first.bottom < second.top  || first.top > second.bottom) &&
+          !(first.right  < second.left || first.left > second.right)
+        );
+      };
+      let contains = (container, candidate) => {
+        return (
+          candidate.top >= container.top &&
+          candidate.bottom <= container.top &&
+          candidate.left >= container.left &&
+          candidate.right <= container.right
+        );
+      };
+      let aspectRatio = (rect) => { 
+        let width = rect.right - rect.left;
+        let height = rect.bottom - rect.top;
+        return width / height;
+      };
+      regions.forEach((region) => {
+        region.center = findCenter(region);
+        region.elements = bounds.elements.filter((element) => element !== pivot && intersects(region, element));
+
+        if (region.elements.length > 0){
+          queue.push(region);
+        } else {
+          if ( 
+            !whiteSpaces.find((container)=> contains(container,region)) &&
+            aspectRatio(region) <= 1
+          ){
+            whiteSpaces.push(region);
+          } else {
+            debugger;
+          }
+          
+        }
+      });
+      //debugger;
+      this.context.clearRect(0,0,this.context.canvas.width, this.context.canvas.height);
+      this.draw(pivot);
+      this.draw(upperRegion, "red");
+      this.draw(lowerRegion, "purple");
+      this.draw(leftRegion, "green");
+      this.draw(rightRegion, "orange");
+      //console.log("Pivot", pivot);
+      //console.log("upperRegion Elements:", upperRegion.elements);
+      //console.log("lowerRegion Elements:", lowerRegion.elements);
+      //console.log("leftRegion Elements:", leftRegion.elements);
+      //console.log("rightRegion Elements:", rightRegion.elements);
+    }
+    console.log(whiteSpaces);
+  }
+
   groupTextIntoLines() {
     // if multiple elements overlap in the Y direction
     // we should calculate whether all of the chunks belong together.
