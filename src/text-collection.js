@@ -267,7 +267,7 @@ class TextCollection {
     // each group has a top and a bottom bound which is the accumulation of
     // the bounds of all of its elements.
     this.groups = [];
-    let candidates = this.sort();
+    let candidates = this.sort();  // sort elements based on each top left corner
     let alreadyGrouped = [];
 
     candidates.forEach((item) => {
@@ -347,8 +347,8 @@ class TextCollection {
   }
 
   mungeLine(line){
-    // /(‘‘)(\w+)/
-    return line;
+    return line.replace(/‘‘/g, '“')
+               .replace(/’’/g, '”');
   }
 
   async dumpDocX() {
@@ -363,6 +363,14 @@ class TextCollection {
       {type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'}
     );
     FileSaver.saveAs(blob, "derp.docx");
+  }
+
+  appendTextToDocX(doc, options={}) {
+    let text = this.dumpText();
+    console.log(text);
+    let paragraph = new docx.Paragraph(text);
+    if (!options.noPageBreak){ paragraph.pageBreakBefore(); }
+    doc.addParagraph(paragraph);
   }
 }
 

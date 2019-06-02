@@ -8,13 +8,16 @@
   let container;   // the container element for our various elements.
   let pageCanvas;  // the canvas element the viewport is drawn into
   let ctx;                // the canvas context object
-  let scale = 1;        // the presentational scale for the page
+  let scale = 2;        // the presentational scale for the page
   let pageNum = 1;        // default to the first page of the PDF.
   let pageRendering = false;
   let pageNumPending = null;
   let hidePDFText = false;
   
   import TextCollection from './text-collection.js';
+  import docx from 'docx';
+  import FileSaver from 'file-saver';
+
 	import { afterUpdate, onMount, onDestroy } from 'svelte';
 	// well this bit is a crazy mess
 	// See: https://github.com/mozilla/pdf.js/issues/10317
@@ -25,6 +28,28 @@
   /* 
     External API for manipulating pages.
   */
+
+  export async function dumpDocX() {
+    let doc = new docx.Document();
+
+    for (let num = 1; num <= pdfDoc.numPages ; num++) {
+      await getPage(num);
+      let text = await getText();
+      let textCollection = new TextCollection(text, viewport, ctx);
+      textCollection.calculateStyles();
+      let options = {};
+      if (num == 1) { options.noPageBreak = true; }
+      textCollection.appendTextToDocX(doc, options);
+    }
+
+    let packer = new docx.Packer();
+    let docBuffer = await packer.toBuffer(doc);
+    let blob = new Blob(
+      [docBuffer], 
+      {type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'}
+    );
+    FileSaver.saveAs(blob, "derp.docx");
+  }
 
   export async function drawTextBounds() {
     let text = await getText();
