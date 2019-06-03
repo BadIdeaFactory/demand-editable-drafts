@@ -31,7 +31,7 @@
 	</header>
 	<section class="document">
 		{#if $documentStore.contents }
-			<DocumentRenderer src={$documentStore.contents} bind:this={renderer} />
+			<DocumentRenderer src={$documentStore} bind:this={renderer} />
 		{/if}
 	</section>
 	<footer class="attribution">

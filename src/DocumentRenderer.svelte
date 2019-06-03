@@ -1,7 +1,17 @@
 <svelte:options accessors={true}/>
 
 <script>
-  export let src;         // URL or data for the pdf
+  export let src;          // URL or data for the pdf
+  let data = src.contents; // actually make this a file object.
+  let fileName = src.name; // with a name.
+  if (!fileName){
+    let now = new Date();
+    let nowDateString = `${now.getFullYear()}-${now.getMonth()}-${now.getDay()}`;
+    let nowTimeString = `${now.getHours()}${now.getMinutes()}${now.getSeconds()}`;
+    let nowString = `${nowDateString}-${nowTimeString}`;
+    fileName = `demand-progress-download-${nowString}`;
+  }
+
   let pdfDoc;      // the pdf proxy object loaded by pdf.js
   let page;        // the current page of the pdf we've loaded.
   let viewport;    // the pdf.js viewport object for the current page
@@ -48,7 +58,7 @@
       [docBuffer], 
       {type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'}
     );
-    FileSaver.saveAs(blob, "derp.docx");
+    FileSaver.saveAs(blob, fileName.replace(/pdf$/, 'docx'));
   }
 
   export async function drawTextBounds() {
@@ -207,7 +217,7 @@
   };
 
 	onMount(async () => {
-    await loadDocument(src);
+    await loadDocument(data);
     ctx = pageCanvas.getContext('2d');
     getPage(pageNum);
   });
@@ -224,6 +234,7 @@
         <button on:click|preventDefault={nextPage}>&gt;</button>
       </nav>
       <nav>
+        <button on:click|preventDefault={dumpDocX}>download docx</button>
         <button on:click|preventDefault={() => { hidePDFText = (! hidePDFText); } } >
           {(hidePDFText) ? 'show' : 'hide' } pdfjs text
         </button>
