@@ -341,7 +341,7 @@ class TextCollection {
     whiteSpaces.forEach( space => space.drawOnto(this.context, {color: 'green'}));
     //debugger;
     //console.log(whiteSpaces);
-    return whiteSpaces();
+    return whiteSpaces;
   }
 
   groupTextIntoLines() {
