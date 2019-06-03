@@ -33,6 +33,7 @@
 */
 import docx from 'docx';
 import FileSaver from 'file-saver';
+import Region from './region';
 
 class TextCollection {
 
@@ -260,131 +261,87 @@ class TextCollection {
                   queue.enqueue(sub_q,sub_r,sub_obstacles)
     */
 
-    // The center of a rectangle is the midpoint of the edges.
-    let findCenter = (rectangle) => {
-      return {
-        x: (rectangle.right  - rectangle.left)/2 + rectangle.left,
-        y: (rectangle.bottom - rectangle.top)/2 + rectangle.top
-      };
-    };
-
-    // Since this algorithm is a divide & conquer search
-    // it recommends starting with a candidate element
-    // that will divide the space most effectively.
-    //
-    // So finding the pivot element will just be identifying
-    // the element with its center closest to the bounding box's.
-    let findPivot = (bounds, candidates) => {
-      // grab the first element
-      let mostCentered;
-      candidates.forEach((item)=>{
-        let candidateDistance = Math.hypot(
-          item.center.x - bounds.center.x, 
-          item.center.y - bounds.center.y
-        );
-        item.center.distanceToBoundsCenter = candidateDistance;
-
-        if (!mostCentered || candidateDistance < mostCentered.center.distanceToBoundsCenter ) {
-          mostCentered = item;
-        }
-      });
-      return mostCentered;
-    };
-
     // turn all of the items into bounding boxes
     // defined by their css measured dimensions.
-    let elements = this.sort().map((item) => {
-      let bounds = {
-        top: item.element.offsetTop,
-        bottom: item.element.offsetTop + item.element.offsetHeight,
-        left: item.element.offsetLeft,
-        right: item.element.offsetLeft + item.element.offsetWidth*item.cssStyles.scale,
-      };
-      // don't forget to include the center.
-      bounds.center = findCenter(bounds);
-      return bounds;
-    });
+    let elements = this.sort().map((item) => new Region(item));
 
     // We're using the canvas as the initial bounding box.
-    let canvasBounds = {
+    let canvasBounds = new Region({
       top: 0,
       bottom: this.context.canvas.height,
       left: 0,
       right: this.context.canvas.width,
-      elements: elements,
-    };
+    }, elements);
 
-        // debugging code
-    // don't forget it's center either.
-    canvasBounds.center = findCenter(canvasBounds);
     let queue = [canvasBounds];
     let whiteSpaces = [];
     while (queue.length > 0) {
-      console.log({queue: queue.length, whiteSpaces: whiteSpaces.length});
-      if (queue.length > 10000) { break; }
+      //console.log({queue: queue.length, whiteSpaces: whiteSpaces.length});
+      //if (queue.length > 1000) { break; }
       // get the next region to search
       let bounds = queue.shift();
       if (bounds.elements.length < 1) { whiteSpaces.push(bounds); break; }
       // find the element that divides the region most evenly
-      let pivot = findPivot(bounds, bounds.elements);
+      let pivot = bounds.findPivot();
 
-      let upperRegion = { top: bounds.top,   bottom: pivot.top,     left: bounds.left, right: bounds.right };
-      let lowerRegion = { top: pivot.bottom, bottom: bounds.bottom, left: bounds.left, right: bounds.right };
-      let leftRegion  = { top: bounds.top,   bottom: bounds.bottom, left: bounds.left, right: pivot.left }; 
-      let rightRegion = { top: bounds.top,   bottom: bounds.bottom, left: pivot.right, right: bounds.right };
-      let regions = [upperRegion, lowerRegion, leftRegion, rightRegion];
+      let regionElements = bounds.elements.filter((element) => element !== pivot);
+      let upperRegion = new Region({ top: bounds.top,   bottom: pivot.top,     left: bounds.left, right: bounds.right }, regionElements);
+      let lowerRegion = new Region({ top: pivot.bottom, bottom: bounds.bottom, left: bounds.left, right: bounds.right }, regionElements);
+      let leftRegion  = new Region({ top: bounds.top,   bottom: bounds.bottom, left: bounds.left, right: pivot.left }, regionElements); 
+      let rightRegion = new Region({ top: bounds.top,   bottom: bounds.bottom, left: pivot.right, right: bounds.right }, regionElements);
+      let regions = [upperRegion, lowerRegion, leftRegion, rightRegion].filter( 
+        region => region.width > 0 && region.height > 0
+      );
 
-      let intersects = (first, second) => {
-        return (
-          !(first.bottom < second.top  || first.top > second.bottom) &&
-          !(first.right  < second.left || first.left > second.right)
-        );
-      };
-      let contains = (container, candidate) => {
-        return (
-          candidate.top >= container.top &&
-          candidate.bottom <= container.top &&
-          candidate.left >= container.left &&
-          candidate.right <= container.right
-        );
-      };
-      let aspectRatio = (rect) => { 
-        let width = rect.right - rect.left;
-        let height = rect.bottom - rect.top;
-        return width / height;
-      };
       regions.forEach((region) => {
-        region.center = findCenter(region);
-        region.elements = bounds.elements.filter((element) => element !== pivot && intersects(region, element));
-
-        if (region.elements.length > 0){
+        // seems like there should be a better way to filter the elements
+        // since it's gotta be done twice.
+        let intersects = elements.filter( el => el !== pivot && region.intersects(el));
+        //this.context.clearRect(0,0,this.context.canvas.width, this.context.canvas.height);
+        //region.drawOnto(this.context, {color: 'green'});
+        //console.log(intersects);
+        //intersects.forEach( el => el.drawOnto(this.context) );
+        //debugger;
+        if (intersects.length > 0){
           queue.push(region);
         } else {
-          if ( 
-            !whiteSpaces.find((container)=> contains(container,region)) &&
-            aspectRatio(region) <= 1
-          ){
+
+          // we should memoize these results somewhere.
+          let adjacentToCanvasBorders = (canvasBorders, region) => {
+            let maximalLeft = new Region({top: region.top, bottom: region.bottom, left: 0, right: region.right}, canvasBorders.elements);
+            let maximalRight = new Region({top: region.top, bottom: region.bottom, left: region.left, right: canvasBorders.right}, canvasBorders.elements);
+            
+            return (maximalLeft.elements.length == 0 || maximalRight.elements.length == 0);
+          };
+
+          if ( !( region.aspectRatio > 1 || 
+                  adjacentToCanvasBorders(canvasBounds, region) || 
+                  whiteSpaces.find( el => el.contains(region) )
+                ) ){
             whiteSpaces.push(region);
+            whiteSpaces = whiteSpaces.sort( (a, b) => b.area - a.area );
           } else {
-            debugger;
+            //console.log("horizontal", region.aspectRatio);
           }
-          
         }
       });
       //debugger;
-      this.context.clearRect(0,0,this.context.canvas.width, this.context.canvas.height);
-      this.draw(pivot);
-      this.draw(upperRegion, "red");
-      this.draw(lowerRegion, "purple");
-      this.draw(leftRegion, "green");
-      this.draw(rightRegion, "orange");
+      //this.context.clearRect(0,0,this.context.canvas.width, this.context.canvas.height);
+      //pivot.drawOnto(this.context);
+      //upperRegion.drawOnto(this.context, {color: 'purple'});
+      //lowerRegion.drawOnto(this.context, {color: 'green'});
+      //leftRegion.drawOnto(this.context, {color: 'orange'});
+      //rightRegion.drawOnto(this.context, {color: 'red'});
       //console.log("Pivot", pivot);
       //console.log("upperRegion Elements:", upperRegion.elements);
       //console.log("lowerRegion Elements:", lowerRegion.elements);
       //console.log("leftRegion Elements:", leftRegion.elements);
       //console.log("rightRegion Elements:", rightRegion.elements);
     }
-    console.log(whiteSpaces);
+    whiteSpaces.forEach( space => space.drawOnto(this.context, {color: 'green'}));
+    //debugger;
+    //console.log(whiteSpaces);
+    return whiteSpaces();
   }
 
   groupTextIntoLines() {

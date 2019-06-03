@@ -63,6 +63,7 @@
 
     textCollection.appendTextElementsTo(textLayer);
     replaceTextLayer(textLayer);
+    textCollection.findWhiteSpace();
     return textCollection;
   }
 
