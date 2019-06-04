@@ -289,7 +289,7 @@ class TextCollection {
       let lowerRegion = new Region({ top: pivot.bottom, bottom: bounds.bottom, left: bounds.left, right: bounds.right }, regionElements);
       let leftRegion  = new Region({ top: bounds.top,   bottom: bounds.bottom, left: bounds.left, right: pivot.left }, regionElements); 
       let rightRegion = new Region({ top: bounds.top,   bottom: bounds.bottom, left: pivot.right, right: bounds.right }, regionElements);
-      let regions = [upperRegion, lowerRegion, leftRegion, rightRegion].filter( 
+      let regions = [leftRegion, rightRegion, upperRegion, lowerRegion].filter( 
         // some pivots have boundaries outside of the region.
         // this prevents regions where the left/right or top/bottom boundaries are inverted.
         region => region.width > 0 && region.height > 0
@@ -321,6 +321,7 @@ class TextCollection {
                   whiteSpaces.find( el => el.contains(region) )
                 ) ){
             whiteSpaces.push(region);
+            //elements.push(region);
             whiteSpaces = whiteSpaces.sort( (a, b) => b.area - a.area );
           } else {
             //console.log("horizontal", region.aspectRatio);
