@@ -103,7 +103,7 @@ Paragraphs always begin with an inden
 
 ### Breuel, Thomas M., "[High Performance Document Layout Analysis][Breuel 2003a]", 2003 ([pdf link][Breuel 2003a pdf])
 
-[breuel 2003a]: https://www.semanticscholar.org/paper/High-Performance-Document-Layout-Analysis-Breuel/0acbc8706cb3e5a43141a03342ded6025a7eb60c
+[Breuel 2003a]: https://www.semanticscholar.org/paper/High-Performance-Document-Layout-Analysis-Breuel/0acbc8706cb3e5a43141a03342ded6025a7eb60c
 [Breuel 2003a pdf]: https://pdfs.semanticscholar.org/0a78/09043fe4f50da53163d1fd318754c5f259e6.pdf
 
 This paper has some key observations despite being 16 years old.  It uses a variety of approaches composed into a single layout analysis system.
@@ -112,9 +112,11 @@ This paper has some key observations despite being 16 years old.  It uses a vari
 
 Breuel calculates a series of rectangles which maximize the area of whitespace each covers in the image.  Just finding all of the whitespace isn't super useful so they added some additional criteria which require whitespace rectangles to be bounded on some number of sides by other elements (either text or page boundary presumably).
 
-Breuel notes that in the simplest case calculating the whitespace is a matter of just maximizing the area in rectilinear areas orthogonal to the page bounds.  However there are a pile of cases where either complex layouts or poorly created documents may frustrate such an analysis.  He notes another paper in which he describes [a more robust mechanism for calculating whitespace boundaries independent of orientation][breuel-2003b].
+Breuel notes that in the simplest case calculating the whitespace is a matter of just maximizing the area in rectilinear areas orthogonal to the page bounds.  However there are a pile of cases where either complex layouts or poorly created documents may frustrate such an analysis.  He notes another paper in which he describes [a more robust mechanism for calculating whitespace boundaries independent of orientation][Breuel 2003b].
 
-[breuel-2003b]: https://www.semanticscholar.org/paper/An-Algorithm-for-Finding-Maximal-Whitespace-at-for-Breuel/973d4afc87a911b2e6acb4a04059f2f5e85c66a9
+[Breuel 2002]: https://www.semanticscholar.org/paper/Two-Geometric-Algorithms-for-Layout-Analysis-Breuel/32004665dd4cba02bef7f1f3b3ddaf79f0e2eafc
+[Breuel 2003b]: https://www.semanticscholar.org/paper/An-Algorithm-for-Finding-Maximal-Whitespace-at-for-Breuel/973d4afc87a911b2e6acb4a04059f2f5e85c66a9
+[Shafait 2008]: https://www.semanticscholar.org/paper/Performance-Evaluation-and-Benchmarking-of-Six-Page-Shafait-Keysers/41d424d8b63e1f2a94f348d897bc19a817257894
 
 The orientation-free analysis essentially functions using four vertex parameters and an angle to indication the rotation of the box.
 
