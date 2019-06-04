@@ -23,6 +23,7 @@
   let pageRendering = false;
   let pageNumPending = null;
   let hidePDFText = false;
+  let textCollection;
   
   import TextCollection from './text-collection.js';
   import docx from 'docx';
@@ -39,13 +40,18 @@
     External API for manipulating pages.
   */
 
+  export async function getTextCollection(){
+    let text = await getText();
+    textCollection = new TextCollection(text, viewport, ctx);
+    return textCollection;
+  }
+
   export async function dumpDocX() {
     let doc = new docx.Document();
 
     for (let num = 1; num <= pdfDoc.numPages ; num++) {
       await getPage(num);
-      let text = await getText();
-      let textCollection = new TextCollection(text, viewport, ctx);
+      let textCollection = await getTextCollection();
       textCollection.calculateStyles();
       let options = {};
       if (num == 1) { options.noPageBreak = true; }
@@ -62,8 +68,7 @@
   }
 
   export async function drawTextBounds() {
-    let text = await getText();
-    let textCollection = new TextCollection(text, viewport, ctx);
+    let textCollection = await getTextCollection();
     textCollection.calculateStyles();
 
     let textLayer = await document.createElement('div');

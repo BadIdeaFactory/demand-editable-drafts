@@ -290,6 +290,8 @@ class TextCollection {
       let leftRegion  = new Region({ top: bounds.top,   bottom: bounds.bottom, left: bounds.left, right: pivot.left }, regionElements); 
       let rightRegion = new Region({ top: bounds.top,   bottom: bounds.bottom, left: pivot.right, right: bounds.right }, regionElements);
       let regions = [upperRegion, lowerRegion, leftRegion, rightRegion].filter( 
+        // some pivots have boundaries outside of the region.
+        // this prevents regions where the left/right or top/bottom boundaries are inverted.
         region => region.width > 0 && region.height > 0
       );
 

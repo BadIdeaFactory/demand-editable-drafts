@@ -26,7 +26,7 @@
 		<FilePicker accept={"application/pdf"} bind:this={picker} />
 		{#if $documentStore.contents }
 			<FileCard file={$documentStore} />
-			<button on:click|preventDefault={ocr}>OCR page</button>
+			<!--<button on:click|preventDefault={ocr}>OCR page</button>-->
 		{/if}
 	</header>
 	<section class="document">
@@ -63,6 +63,8 @@
 
 </style>
 
+<!--
 <svelte:head>
 	<script src='https://unpkg.com/tesseract.js@v2.0.0-alpha.10/dist/tesseract.min.js'></script>
 </svelte:head>
+-->

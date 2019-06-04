@@ -13,7 +13,6 @@ class Region {
       this.right  = params.right;
     } else {
       // lol error
-      debugger;
       throw "Invalid parameters (params must be an object w/ top,bottom,left,right or have an html `element`)";
     }
 
