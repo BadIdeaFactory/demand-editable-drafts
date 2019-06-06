@@ -75,6 +75,19 @@ class Region {
             Math.max(region.right, this.right) == this.right);
   }
 
+  overlap(region) {
+    let result;
+    if (this.intersects(region)) {
+      return new Region({ 
+        top:    Math.max(region.top, this.top),
+        bottom: Math.min(region.bottom, this.bottom),
+        left:   Math.max(region.left, this.left),
+        right:  Math.min(region.right, this.right)
+      });
+    }
+    return result;
+  }
+
   drawOnto(context, style={}){
     context.strokeStyle = (style.color || "blue");
     context.setLineDash([6]);

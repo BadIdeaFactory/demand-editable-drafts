@@ -352,13 +352,13 @@ class TextCollection {
       regions.forEach((region) => {
         // seems like there should be a better way to filter the elements
         // since it's gotta be done twice.
-        let intersects = elements.filter( el => el !== pivot && region.intersects(el));
+        let intersectsElement = elements.some( el => el !== pivot && region.intersects(el));
         //this.context.clearRect(0,0,this.context.canvas.width, this.context.canvas.height);
         //region.drawOnto(this.context, {color: 'green'});
         //console.log(intersects);
         //intersects.forEach( el => el.drawOnto(this.context) );
         //debugger;
-        if (intersects.length > 0){
+        if (intersectsElement){
           queue.push(region);
         } else {
 
@@ -370,10 +370,33 @@ class TextCollection {
             return (maximalLeft.elements.length == 0 || maximalRight.elements.length == 0);
           };
 
+          let intersectsTooMuch = (region) => {
+            return whiteSpaces.find( space => {
+              return (
+                region.intersects(space)// && region.overlap(space) > 0  // what should this number be
+              );
+            });
+          };
+
+          let spaceWidths = Object.values(this.styles).map((style) => style.spaceWidth);
+          let medianPosition = Math.floor(spaceWidths.length/2);
+          if (spaceWidths.length % 2 == 0) { medianPosition--; }
+          //let medianSpaceWidth = spaceWidths.sort()[medianPosition];
+          //let averageSpaceWidth = spaceWidths.reduce((sum,num)=>sum+num,0) / spaceWidths.length;
+          let fontCount = items.reduce((fonts, item) => {
+            fonts[item.fontName] = ((fonts[item.fontName] || 0) + 1);
+            return fonts;
+          }, {});
+          let weightedAverageSpaceWidth = Object.entries(fontCount).reduce((sum, [name,count]) =>{
+            return sum + ((count) * this.styles[name].spaceWidth);
+          }, 0) / Object.values(fontCount).reduce((sum,num)=>sum+num, 0);
+
           if ( !( //region.aspectRatio > 1 || 
                   adjacentToCanvasBorders(canvasBounds, region) || 
-                  whiteSpaces.find( el => el.contains(region) )
-                ) ){
+                  //intersectsTooMuch(region) ||
+                  region.width < weightedAverageSpaceWidth
+                )
+              ){
             whiteSpaces.push(region);
             //elements.push(region);
             whiteSpaces = whiteSpaces.sort( (a, b) => b.area - a.area );
