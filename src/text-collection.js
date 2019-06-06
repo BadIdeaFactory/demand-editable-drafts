@@ -294,6 +294,7 @@ class TextCollection {
         let capsLine = new Region(capsLineBoundaries);
         capsLine.items = capsLineRegions.map(region => region.item);
         if (!capsLineRegions.every(region=>capsLine.contains(region))) { debugger; }
+        capsLine.drawOnto(this.context);
         return capsLine;
       });
 
@@ -364,25 +365,22 @@ class TextCollection {
 
           // we should memoize these results somewhere.
           let adjacentToCanvasBorders = (canvasBorders, region) => {
-            let maximalLeft = new Region({top: region.top, bottom: region.bottom, left: 0, right: region.right}, canvasBorders.elements);
-            let maximalRight = new Region({top: region.top, bottom: region.bottom, left: region.left, right: canvasBorders.right}, canvasBorders.elements);
+            let maximalLeft = new Region({
+                top: region.top, 
+                bottom: region.bottom, 
+                left: 0, 
+                right: region.right
+              }, canvasBorders.elements);
+            let maximalRight = new Region({
+                top: region.top, 
+                bottom: region.bottom, 
+                left: region.left, 
+                right: canvasBorders.right
+              }, canvasBorders.elements);
             
             return (maximalLeft.elements.length == 0 || maximalRight.elements.length == 0);
           };
 
-          let intersectsTooMuch = (region) => {
-            return whiteSpaces.find( space => {
-              return (
-                region.intersects(space)// && region.overlap(space) > 0  // what should this number be
-              );
-            });
-          };
-
-          let spaceWidths = Object.values(this.styles).map((style) => style.spaceWidth);
-          let medianPosition = Math.floor(spaceWidths.length/2);
-          if (spaceWidths.length % 2 == 0) { medianPosition--; }
-          //let medianSpaceWidth = spaceWidths.sort()[medianPosition];
-          //let averageSpaceWidth = spaceWidths.reduce((sum,num)=>sum+num,0) / spaceWidths.length;
           let fontCount = items.reduce((fonts, item) => {
             fonts[item.fontName] = ((fonts[item.fontName] || 0) + 1);
             return fonts;
