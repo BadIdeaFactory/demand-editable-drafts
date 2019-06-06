@@ -40,7 +40,7 @@
     External API for manipulating pages.
   */
 
-  export async function getTextCollection(){
+  async function getTextCollection(){
     let text = await getText();
     textCollection = new TextCollection(text, viewport, ctx);
     return textCollection;
