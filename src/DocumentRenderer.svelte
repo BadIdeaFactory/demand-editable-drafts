@@ -23,7 +23,7 @@
   let pageRendering = false;
   let pageNumPending = null;
   let hidePDFText = false;
-  let textCollection;
+  export let textCollection;
   
   import TextCollection from './text-collection.js';
   import docx from 'docx';
@@ -114,7 +114,7 @@
         output = xmlDom;
       }
     }
-      return output;
+    return output;
   }
   
   export async function getPage(num) {
@@ -224,7 +224,7 @@
 	onMount(async () => {
     await loadDocument(data);
     ctx = pageCanvas.getContext('2d');
-    getPage(pageNum);
+    await getPage(pageNum);
   });
 
   onDestroy(() => { unloadDocument(); });
