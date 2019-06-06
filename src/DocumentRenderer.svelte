@@ -92,19 +92,19 @@
 
   export async function getAttachments() {
     if (!page) { await getPage(pageNum); };
-    return await app.analyzer.currentPage.pdfDoc.getAttachments();
+    return await pdfDoc.getAttachments();
   };
 
   export async function getXML(opts) {
     if (!page) { await getPage(pageNum); };
     let attachments = await getAttachments();
     // Assume the first XML file we can find is the legislative XML file.
-    let xmlFile = Object.values(attachments).find((entry) => {
-      return (entry.filename && entry.content && entry.filename.match(/\.xml$/) )
-    });
-  
     let output;
-    if (xmlFile) {
+    if (attachments) {
+      let xmlFile = Object.values(attachments).find((entry) => {
+        return (entry.filename && entry.content && entry.filename.match(/\.xml$/) )
+      });
+    
       let fileContents = new TextDecoder('utf-8').decode(xmlFile.content);
       if (opts && opts.text) {
         output = fileContents;
