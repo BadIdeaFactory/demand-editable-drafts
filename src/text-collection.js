@@ -231,6 +231,64 @@ class TextCollection {
     return this.items.sort(this._sorters["orderByTopLeft"]);
   }
 
+  mergeSmallCaps(items) {
+    let regions = items.map((item) => {let region = new Region(item); region.item = item; return region; });
+    // if regions are adjacent and share a font, and are smallcaps, merge them into a single region.
+
+    // share a y position and are w/in some boundary of adjacency
+    
+    // get all of the strings that are all caps.
+    let allCaps = regions.filter((region)=>{
+      return region.item.str.match(/^([A-Z]|\W)*[A-Z]([A-Z]|\W)*$/);
+    });
+
+    // next we find the elements that are adjacent to them
+    let capsLines = allCaps.map((caps)=>{
+      let capsSpaceWidth = this.styles[caps.item.fontName].spaceWidth;
+      let sameLine = (a, b) => {
+        let extendedToBorder = new Region({ 
+          top: a.top, 
+          bottom: a.bottom, 
+          left: 0, 
+          right: this.context.canvas.width
+        });
+        return extendedToBorder.intersects(b);
+      };
+      let capsLineRegions = regions.filter((region) => {
+        return (
+          region.item.fontName == caps.item.fontName &&
+          sameLine(caps, region)
+        );
+      });
+      let capsLineBoundaries = capsLineRegions.reduce((lineBounds, region) => {
+        return {
+          top    : (lineBounds.top)    ? Math.min(lineBounds.top, region.top)       : region.top,
+          bottom : (lineBounds.bottom) ? Math.max(lineBounds.bottom, region.bottom) : region.bottom,
+          left   : (lineBounds.left)   ? Math.min(lineBounds.left, region.left)     : region.left,
+          right  : (lineBounds.right)  ? Math.max(lineBounds.right, region.right)   : region.right,
+        };
+      }, {});
+      let capsLine = new Region(capsLineBoundaries);
+      capsLine.items = capsLineRegions.map(region => region.item);
+      if (!capsLineRegions.every(region=>capsLine.contains(region))) { debugger; }
+      capsLine.drawOnto(this.context);
+      return capsLine;
+    });
+
+    let capsItems = capsLines.reduce((list, line) => list.concat(line.items), []);
+    let result = capsLines.concat(regions.filter(region => !capsItems.includes(region.item)));
+    return result.sort((a, b) => {
+      // if the y coordinates are the same
+      if (a.top == b.top) {
+        // determine what the x position is
+        return a.left - b.left;
+      } else {
+        // otherwise just sort these two points based on the y.
+        return a.top - b.top;
+      }
+    });
+  }
+
   findWhiteSpace() {
     /*
       Extracted from Breuel2002.
@@ -254,67 +312,8 @@ class TextCollection {
                   queue.enqueue(sub_q,sub_r,sub_obstacles)
     */
 
-    let mergeSmallCaps = (items) => {
-      let regions = items.map((item) => {let region = new Region(item); region.item = item; return region; });
-      // if regions are adjacent and share a font, and are smallcaps, merge them into a single region.
-
-      // share a y position and are w/in some boundary of adjacency
-      
-      // get all of the strings that are all caps.
-      let allCaps = regions.filter((region)=>{
-        return region.item.str.match(/^([A-Z]|\W)*[A-Z]([A-Z]|\W)*$/);
-      });
-
-      // next we find the elements that are adjacent to them
-      let capsLines = allCaps.map((caps)=>{
-        let capsSpaceWidth = this.styles[caps.item.fontName].spaceWidth;
-        let sameLine = (a, b) => {
-          let extendedToBorder = new Region({ 
-            top: a.top, 
-            bottom: a.bottom, 
-            left: 0, 
-            right: this.context.canvas.width
-          });
-          return extendedToBorder.intersects(b);
-        };
-        let capsLineRegions = regions.filter((region) => {
-          return (
-            region.item.fontName == caps.item.fontName &&
-            sameLine(caps, region)
-          );
-        });
-        let capsLineBoundaries = capsLineRegions.reduce((lineBounds, region) => {
-          return {
-            top    : (lineBounds.top)    ? Math.min(lineBounds.top, region.top)       : region.top,
-            bottom : (lineBounds.bottom) ? Math.max(lineBounds.bottom, region.bottom) : region.bottom,
-            left   : (lineBounds.left)   ? Math.min(lineBounds.left, region.left)     : region.left,
-            right  : (lineBounds.right)  ? Math.max(lineBounds.right, region.right)   : region.right,
-          };
-        }, {});
-        let capsLine = new Region(capsLineBoundaries);
-        capsLine.items = capsLineRegions.map(region => region.item);
-        if (!capsLineRegions.every(region=>capsLine.contains(region))) { debugger; }
-        capsLine.drawOnto(this.context);
-        return capsLine;
-      });
-
-      let capsItems = capsLines.reduce((list, line) => list.concat(line.items), []);
-      let result = capsLines.concat(regions.filter(region => !capsItems.includes(region.item)));
-      return result.sort((a, b) => {
-        // if the y coordinates are the same
-        if (a.top == b.top) {
-          // determine what the x position is
-          return a.left - b.left;
-        } else {
-          // otherwise just sort these two points based on the y.
-          return a.top - b.top;
-        }
-      });
-      return items;
-    };
-
     let items = this.sort();
-    let mergedItems = mergeSmallCaps(items);
+    let mergedItems = this.mergeSmallCaps(items);
 
     // turn all of the items into bounding boxes
     // defined by their css measured dimensions.
@@ -389,12 +388,8 @@ class TextCollection {
             return sum + ((count) * this.styles[name].spaceWidth);
           }, 0) / Object.values(fontCount).reduce((sum,num)=>sum+num, 0);
 
-          if ( !( //region.aspectRatio > 1 || 
-                  adjacentToCanvasBorders(canvasBounds, region) || 
-                  //intersectsTooMuch(region) ||
-                  region.width < weightedAverageSpaceWidth
-                )
-              ){
+          if ( !( adjacentToCanvasBorders(canvasBounds, region) || 
+                  region.width < weightedAverageSpaceWidth ) ){
             whiteSpaces.push(region);
             //elements.push(region);
             whiteSpaces = whiteSpaces.sort( (a, b) => b.area - a.area );
