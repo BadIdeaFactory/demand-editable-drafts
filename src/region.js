@@ -60,6 +60,15 @@ class Region {
     return mostCentered;
   }
 
+  equalBounds(region) {
+    return (
+      this.top == region.top &&
+      this.bottom == region.bottom &&
+      this.left == region.left &&
+      this.right == region.right
+    );
+  }
+
   intersects(region) {
     let x1 = Math.max(this.left, region.left);
     let x2 = Math.min(this.right, region.right);

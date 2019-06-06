@@ -58,6 +58,16 @@ class TextCollection {
     this._sorters = {
       orderByTopLeft: (a, b) => {
         // if the y coordinates are the same
+        if (a.top == b.top) {
+          // determine what the x position is
+          return a.left - b.left;
+        } else {
+          // otherwise just sort these two points based on the y.
+          return a.top - b.top;
+        }
+      },
+      orderItemsByTopLeft: (a, b) => {
+        // if the y coordinates are the same
         if (a.cssStyles.top == b.cssStyles.top) {
           // determine what the x position is
           return a.cssStyles.left - b.cssStyles.left;
@@ -228,7 +238,7 @@ class TextCollection {
   }
 
   sort() {
-    return this.items.sort(this._sorters["orderByTopLeft"]);
+    return this.items.sort(this._sorters["orderItemsByTopLeft"]);
   }
 
   mergeSmallCaps(items) {
@@ -277,16 +287,7 @@ class TextCollection {
 
     let capsItems = capsLines.reduce((list, line) => list.concat(line.items), []);
     let result = capsLines.concat(regions.filter(region => !capsItems.includes(region.item)));
-    return result.sort((a, b) => {
-      // if the y coordinates are the same
-      if (a.top == b.top) {
-        // determine what the x position is
-        return a.left - b.left;
-      } else {
-        // otherwise just sort these two points based on the y.
-        return a.top - b.top;
-      }
-    });
+    return result.sort(this._sorters.orderByTopLeft);
   }
 
   findWhiteSpace() {
@@ -310,6 +311,13 @@ class TextCollection {
                   sub_obstacles =
                       [list of u in obstacles if not overlaps(u,sub_r)]
                   queue.enqueue(sub_q,sub_r,sub_obstacles)
+    */
+   /*
+    Breuel's algorithm turns out to be super sensitive to the order of the
+    search being performed, and the unspecified quality function used in
+    the algorithm.  In our case we'll use a search which first searches
+    the vertical regions (to the left and right of the pivot) in order
+    to try and find the tallest whiteSpaces.
     */
 
     let items = this.sort();
@@ -384,15 +392,42 @@ class TextCollection {
             fonts[item.fontName] = ((fonts[item.fontName] || 0) + 1);
             return fonts;
           }, {});
-          let weightedAverageSpaceWidth = Object.entries(fontCount).reduce((sum, [name,count]) =>{
+          
+          let weightedAverageNumerator = Object.entries(fontCount).reduce((sum, [name,count]) =>{
             return sum + ((count) * this.styles[name].spaceWidth);
-          }, 0) / Object.values(fontCount).reduce((sum,num)=>sum+num, 0);
+          }, 0);
+          let itemCount = Object.values(fontCount).reduce((sum,num)=>sum+num, 0);
+          let weightedAverageSpaceWidth = weightedAverageNumerator / itemCount;
 
-          if ( !( adjacentToCanvasBorders(canvasBounds, region) || 
-                  region.width < weightedAverageSpaceWidth ) ){
-            whiteSpaces.push(region);
+          let isMeaningfulWhiteSpace = !( adjacentToCanvasBorders(canvasBounds, region) ||
+                                          //whiteSpaces.find(space => space.equalBounds(region)) ||
+                                          region.width < weightedAverageSpaceWidth );
+          if ( isMeaningfulWhiteSpace ){
+
+            let extendableElement = whiteSpaces.find( space => {
+              // an element is extendable if it shares two parallel boundaries 
+              // and intersects with the region.
+              return (
+                ( space.top == region.top && space.bottom == region.bottom ||
+                  space.left == region.left && space.right == region.right  
+                ) && 
+                space.intersects(region)
+              );
+            });
+            
+            if (extendableElement){
+              let extendedSpace = new Region({
+                top: Math.min(extendableElement.top, region.top),
+                bottom: Math.max(extendableElement.bottom, region.bottom),
+                left: Math.min(extendableElement.left, region.left),
+                right: Math.max(extendableElement.right, region.right)
+              });
+              whiteSpaces.splice(whiteSpaces.indexOf(extendableElement), 1, extendedSpace);
+            } else {
+              whiteSpaces.push(region);
+            }
             //elements.push(region);
-            whiteSpaces = whiteSpaces.sort( (a, b) => b.area - a.area );
+            whiteSpaces = whiteSpaces.sort((a,b)=>b.height-a.height);
           } else {
             //console.log("horizontal", region.aspectRatio);
           }
@@ -413,9 +448,14 @@ class TextCollection {
     }
     whiteSpaces.forEach( space => space.drawOnto(this.context, {color: 'green'}));
     //debugger;
-    //console.log(whiteSpaces);
+    this.whiteSpaces = whiteSpaces;
     return whiteSpaces;
   }
+
+  // okay we know these documents are legislation.
+  // they have a header on the first N pages.
+  // Once the header is identified, the remainder of the document is
+  // a numbered list of lines, and indentations.
 
   groupTextIntoLines() {
     // if multiple elements overlap in the Y direction
