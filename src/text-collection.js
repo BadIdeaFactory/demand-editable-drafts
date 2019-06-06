@@ -231,13 +231,6 @@ class TextCollection {
     return this.items.sort(this._sorters["orderByTopLeft"]);
   }
 
-  // this function should be elsewhere, but whatevs.
-  draw(rect, color="blue") {
-    this.context.strokeStyle = color;
-    this.context.setLineDash([6]);
-    this.context.strokeRect(rect.left, rect.top, rect.right-rect.left, rect.bottom-rect.top);
-  }
-
   findWhiteSpace() {
     /*
       Extracted from Breuel2002.
