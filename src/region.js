@@ -86,6 +86,25 @@ class Region {
     return mostCentered;
   }
 
+  partition(boundary) {
+    if (!['top', 'bottom', 'left', 'right'].every(key => Object.keys(boundary).includes(key))) {
+      throw "Boundary must have `top`, `bottom`, `left` and `right` keys";
+    }
+    let leftRegion = new Region({
+      top: boundary.top,
+      bottom: boundary.bottom,
+      left: this.left,
+      right: boundary.left,
+    }, this.items, this.obstacles);
+    let rightRegion = new Region({
+      top: boundary.top,
+      bottom: boundary.bottom,
+      left: boundary.right,
+      right: this.right,
+    }, this.items, this.obstacles);
+    return [leftRegion, rightRegion];
+  }
+
   equalBounds(region) {
     return (
       this.top == region.top &&

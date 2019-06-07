@@ -79,6 +79,7 @@
     textCollection.appendTextElementsTo(textLayer);
     replaceTextLayer(textLayer);
     textCollection.appendWhiteSpaceTo(textLayer);
+    textCollection.group();
     return textCollection;
   }
 

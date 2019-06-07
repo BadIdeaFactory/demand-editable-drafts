@@ -374,31 +374,14 @@ class TextCollection {
         // seems like there should be a better way to filter the elements
         // since it's gotta be done twice.
         let intersectsElement = elements.some( el => el !== pivot && region.intersects(el));
-        //this.context.clearRect(0,0,this.context.canvas.width, this.context.canvas.height);
-        //region.drawOnto(this.context, {color: 'green'});
-        //console.log(intersects);
-        //intersects.forEach( el => el.drawOnto(this.context) );
-        //debugger;
         if (intersectsElement){
           queue.push(region);
         } else {
 
           // we should memoize these results somewhere.
-          let adjacentToCanvasBorders = (canvasBorders, region) => {
-            let maximalLeft = new Region({
-                top: region.top, 
-                bottom: region.bottom, 
-                left: 0, 
-                right: region.right
-              }, canvasBorders.items);
-            let maximalRight = new Region({
-                top: region.top, 
-                bottom: region.bottom, 
-                left: region.left, 
-                right: canvasBorders.right
-              }, canvasBorders.items);
-            
-            return (maximalLeft.items.length == 0 || maximalRight.items.length == 0);
+          let partitionsText = (container, region) => {
+            let [left, right] = container.partition(region);
+            return (left.items.length == 0 || right.items.length == 0);
           };
 
           let fontCount = items.reduce((fonts, item) => {
@@ -412,7 +395,7 @@ class TextCollection {
           let itemCount = Object.values(fontCount).reduce((sum,num)=>sum+num, 0);
           let weightedAverageSpaceWidth = weightedAverageNumerator / itemCount;
 
-          let isMeaningfulWhiteSpace = !( adjacentToCanvasBorders(canvasBounds, region) ||
+          let isMeaningfulWhiteSpace = !( partitionsText(canvasBounds, region) ||
                                           region.aspectRatio > 1 ||
                                           //whiteSpaces.find(space => space.equalBounds(region)) ||
                                           region.width < weightedAverageSpaceWidth );
@@ -502,35 +485,22 @@ class TextCollection {
 
     let regions = [];
     // whiteSpaces should be sorted by height
+    let verticalBounds = [];
     this.whiteSpaces.forEach((space) => {
-      let dividedRegion = new Region({
+      let leftRegion = new Region({
         top: space.top,
         bottom: space.bottom,
-        left: 0,
+        left: canvasRegion.left,
+        right: space.right,
+      }, candidates, this.whiteSpaces);
+      let rightRegion = new Region({
+        top: space.top,
+        bottom: space.bottom,
+        left: space.left,
         right: canvasRegion.right,
-      }, candidates, this.whiteSpace);
-
-      let separatesElements = (region, space) => {
-        let sharesLine = (a, b) => !(a.bottom < b.top || a.top > b.bottom);
-        return region.items.some(i1 => region.items.some( i2 => sharesLine(i1,i2) ) );
-      };
-
-      if (separatesElements(dividedRegion, space)) {
-        let leftRegion = new Region({
-          top: space.top,
-          bottom: space.bottom,
-          left: canvasRegion.left,
-          right: space.right,
-        }, candidates, this.whiteSpaces);
-        let rightRegion = new Region({
-          top: space.top,
-          bottom: space.bottom,
-          left: space.left,
-          right: canvasRegion.right,
-        }, candidates, this.whiteSpaces);
+      }, candidates, this.whiteSpaces);
   
-        regions.push(leftRegion, rightRegion);
-      }
+      regions.push(leftRegion, rightRegion);
     });
 
     regions = regions.sort((a,b)=>a.area-b.area).filter(
