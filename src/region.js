@@ -1,39 +1,59 @@
 class Region {
-  constructor(params, items=[]) {
+  constructor(params, items=[], obstacles=[]) {
     let keys = Object.keys(params);
+    let bounds;
     if (['cssStyles', 'element'].every( key => keys.includes(key) )) {
-      this.top    = params.element.offsetTop;
-      this.bottom = params.element.offsetTop + params.element.offsetHeight;
-      this.left   = params.element.offsetLeft;
-      this.right  = params.element.offsetLeft + params.element.offsetWidth*(params.cssStyles.scale||1);
+      bounds = {
+        top:     params.element.offsetTop,
+        bottom:  params.element.offsetTop + params.element.offsetHeight,
+        left:    params.element.offsetLeft,
+        right:   params.element.offsetLeft + params.element.offsetWidth*(params.cssStyles.scale||1),
+      };
     } else if (['top', 'bottom', 'left', 'right'].every( key => keys.includes(key) )) {
-      this.top    = params.top;
-      this.bottom = params.bottom;
-      this.left   = params.left;
-      this.right  = params.right;
+      bounds = {
+        top:    params.top,
+        bottom: params.bottom,
+        left:   params.left,
+        right:  params.right,
+      };
     } else {
       // lol error
       throw "Invalid parameters (params must be an object w/ top,bottom,left,right or have an html `element`)";
     }
 
+    this.setBounds(bounds, items, obstacles);
+    //if (this.width < 0 || this.height < 0) { debugger; }
+  }
+
+  setBounds(bounds, items=[], obstacles=[]){
     ['top', 'bottom', 'left', 'right'].forEach(key => {
-      let value = this[key];
+      let value = bounds[key];
       if ((typeof value) == 'string') { value = Number.parseFloat(value); }
       this[key] = value; // Math.floor(value);
     });
+    this.calculateData();
+    if (items && items.length > 0) { this.setItems(items); }
+    if (obstacles && obstacles.length > 0) { this.setObstacles(obstacles); }
+  }
 
-    this.setItems(items);
+  calculateData() {
     this.center = this.findCenter();
     this.width = this.right - this.left;
     this.height = this.bottom - this.top;
     this.aspectRatio = this.width / this.height;
     this.area = this.width*this.height;
+  }
 
-    //if (this.width < 0 || this.height < 0) { debugger; }
+  isEmpty() {
+    return this.items.length == 0;
   }
 
   setItems(candidates) {
-    this.items = candidates.filter((el) => this.intersects(el));
+    this.items = candidates.filter(el => this.intersects(el));
+  }
+
+  setObstacles(candidates) {
+    this.obstacles = candidates.filter(space => this.intersects(space));
   }
 
   // The center of a rectangle is the midpoint of the edges.
