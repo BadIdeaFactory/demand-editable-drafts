@@ -355,15 +355,15 @@ class TextCollection {
       //if (queue.length > 1000) { break; }
       // get the next region to search
       let bounds = queue.shift();
-      if (bounds.elements.length < 1) { whiteSpaces.push(bounds); break; }
+      if (bounds.items.length < 1) { whiteSpaces.push(bounds); break; }
       // find the element that divides the region most evenly
       let pivot = bounds.findPivot();
 
-      let regionElements = bounds.elements.filter((element) => element !== pivot);
-      let upperRegion = new Region({ top: bounds.top,   bottom: pivot.top,     left: bounds.left, right: bounds.right }, regionElements);
-      let lowerRegion = new Region({ top: pivot.bottom, bottom: bounds.bottom, left: bounds.left, right: bounds.right }, regionElements);
-      let leftRegion  = new Region({ top: bounds.top,   bottom: bounds.bottom, left: bounds.left, right: pivot.left }, regionElements); 
-      let rightRegion = new Region({ top: bounds.top,   bottom: bounds.bottom, left: pivot.right, right: bounds.right }, regionElements);
+      let regionItems = bounds.items.filter((element) => element !== pivot);
+      let upperRegion = new Region({ top: bounds.top,   bottom: pivot.top,     left: bounds.left, right: bounds.right }, regionItems);
+      let lowerRegion = new Region({ top: pivot.bottom, bottom: bounds.bottom, left: bounds.left, right: bounds.right }, regionItems);
+      let leftRegion  = new Region({ top: bounds.top,   bottom: bounds.bottom, left: bounds.left, right: pivot.left }, regionItems); 
+      let rightRegion = new Region({ top: bounds.top,   bottom: bounds.bottom, left: pivot.right, right: bounds.right }, regionItems);
       let regions = [leftRegion, rightRegion, upperRegion, lowerRegion].filter( 
         // some pivots have boundaries outside of the region.
         // this prevents regions where the left/right or top/bottom boundaries are inverted.
@@ -390,15 +390,15 @@ class TextCollection {
                 bottom: region.bottom, 
                 left: 0, 
                 right: region.right
-              }, canvasBorders.elements);
+              }, canvasBorders.items);
             let maximalRight = new Region({
                 top: region.top, 
                 bottom: region.bottom, 
                 left: region.left, 
                 right: canvasBorders.right
-              }, canvasBorders.elements);
+              }, canvasBorders.items);
             
-            return (maximalLeft.elements.length == 0 || maximalRight.elements.length == 0);
+            return (maximalLeft.items.length == 0 || maximalRight.items.length == 0);
           };
 
           let fontCount = items.reduce((fonts, item) => {
@@ -464,10 +464,10 @@ class TextCollection {
       //leftRegion.drawOnto(this.context, {color: 'orange'});
       //rightRegion.drawOnto(this.context, {color: 'red'});
       //console.log("Pivot", pivot);
-      //console.log("upperRegion Elements:", upperRegion.elements);
-      //console.log("lowerRegion Elements:", lowerRegion.elements);
-      //console.log("leftRegion Elements:", leftRegion.elements);
-      //console.log("rightRegion Elements:", rightRegion.elements);
+      //console.log("upperRegion Elements:", upperRegion.items);
+      //console.log("lowerRegion Elements:", lowerRegion.items);
+      //console.log("leftRegion Elements:", leftRegion.items);
+      //console.log("rightRegion items:", rightRegion.items);
     }
     //whiteSpaces.forEach( space => space.drawOnto(this.context, {color: 'green'}));
     //debugger;

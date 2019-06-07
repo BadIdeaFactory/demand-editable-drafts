@@ -1,5 +1,5 @@
 class Region {
-  constructor(params, elements=[]) {
+  constructor(params, items=[]) {
     let keys = Object.keys(params);
     if (['cssStyles', 'element'].every( key => keys.includes(key) )) {
       this.top    = params.element.offsetTop;
@@ -16,7 +16,7 @@ class Region {
       throw "Invalid parameters (params must be an object w/ top,bottom,left,right or have an html `element`)";
     }
 
-    this.setElements(elements);
+    this.setItems(items);
     this.center = this.findCenter();
     this.width = this.right - this.left;
     this.height = this.bottom - this.top;
@@ -26,8 +26,8 @@ class Region {
     //if (this.width < 0 || this.height < 0) { debugger; }
   }
 
-  setElements(candidates) {
-    this.elements = candidates.filter((el) => this.intersects(el));
+  setItems(candidates) {
+    this.items = candidates.filter((el) => this.intersects(el));
   }
 
   // The center of a rectangle is the midpoint of the edges.
@@ -47,7 +47,7 @@ class Region {
   findPivot(){
     // grab the first element
     let mostCentered;
-    this.elements.forEach((item)=>{
+    this.items.forEach((item)=>{
       let candidateDistance = Math.hypot(
         item.center.x - this.center.x, 
         item.center.y - this.center.y
