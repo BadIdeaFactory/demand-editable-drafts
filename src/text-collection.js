@@ -384,6 +384,31 @@ class TextCollection {
             return (left.items.length == 0 || right.items.length == 0);
           };
 
+          let isSubset = (a, b) => a.items.every(item => b.items.indexOf(item) > -1);
+
+          let equivalentPartitions = (container, partitions, partition) => {
+            let equivalent = (region, firstPartition, secondPartition) => {
+              let [firstLeft, firstRight] = region.partition(firstPartition);
+              let [secondLeft, secondRight] = region.partition(secondPartition);
+
+              let equivalentLeft = isSubset(firstLeft, secondLeft) && isSubset(secondLeft, firstLeft);
+              let equivalentRight = isSubset(firstRight, secondRight) && isSubset(secondRight, firstRight);
+              return equivalentLeft && equivalentRight;
+            };
+            return partitions.filter(other => equivalent(container, partition, other));
+          };
+
+          let equalOrBetterPartitions = (container, partitions, partition) => {
+            let firstPartitionBeatsSecond = (region, firstPartition, secondPartition) => {
+              let [firstLeft, firstRight] = region.partition(firstPartition);
+              let [secondLeft, secondRight] = region.partition(secondPartition);
+              return isSubset(secondLeft, firstLeft) || isSubset(secondRight, firstRight);
+            };
+            return partitions.filter(other => firstPartitionBeatsSecond(container, other, partition));
+          };
+
+          let matches = equalOrBetterPartitions(canvasBounds, whiteSpaces, region);
+          
           let fontCount = items.reduce((fonts, item) => {
             fonts[item.fontName] = ((fonts[item.fontName] || 0) + 1);
             return fonts;
@@ -397,6 +422,7 @@ class TextCollection {
 
           let isMeaningfulWhiteSpace = !( partitionsText(canvasBounds, region) ||
                                           region.aspectRatio > 1 ||
+                                          matches.length > 0 ||
                                           //whiteSpaces.find(space => space.equalBounds(region)) ||
                                           region.width < weightedAverageSpaceWidth );
           if ( isMeaningfulWhiteSpace ){
