@@ -16,6 +16,12 @@ class Region {
       throw "Invalid parameters (params must be an object w/ top,bottom,left,right or have an html `element`)";
     }
 
+    ['top', 'bottom', 'left', 'right'].forEach(key => {
+      let value = this[key];
+      if ((typeof value) == 'string') { value = Number.parseFloat(value); }
+      this[key] = value; // Math.floor(value);
+    });
+
     this.setItems(items);
     this.center = this.findCenter();
     this.width = this.right - this.left;
