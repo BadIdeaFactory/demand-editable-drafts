@@ -413,6 +413,7 @@ class TextCollection {
           let weightedAverageSpaceWidth = weightedAverageNumerator / itemCount;
 
           let isMeaningfulWhiteSpace = !( adjacentToCanvasBorders(canvasBounds, region) ||
+                                          region.aspectRatio > 1 ||
                                           //whiteSpaces.find(space => space.equalBounds(region)) ||
                                           region.width < weightedAverageSpaceWidth );
           if ( isMeaningfulWhiteSpace ){
