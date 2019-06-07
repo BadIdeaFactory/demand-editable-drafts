@@ -78,7 +78,7 @@
 
     textCollection.appendTextElementsTo(textLayer);
     replaceTextLayer(textLayer);
-    textCollection.findWhiteSpace();
+    textCollection.appendWhiteSpaceTo(textLayer);
     return textCollection;
   }
 

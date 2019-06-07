@@ -290,6 +290,19 @@ class TextCollection {
     return result.sort(this._sorters.orderByTopLeft);
   }
 
+  appendWhiteSpaceTo(textLayer) {
+    this.findWhiteSpace();
+    let spaceContainer = document.createElement("div");
+    this.whiteSpaces.forEach((space)=>{
+      let el = document.createElement("span");
+      el.setAttribute('style', 
+      `left: ${space.left}px; top: ${space.top}px; width: ${space.width}px; height: ${space.height}px;`);
+      spaceContainer.appendChild(el);
+      space.element = el;
+    });
+    textLayer.appendChild(spaceContainer);
+  }
+
   findWhiteSpace() {
     /*
       Extracted from Breuel2002.
@@ -424,7 +437,17 @@ class TextCollection {
               });
               whiteSpaces.splice(whiteSpaces.indexOf(extendableElement), 1, extendedSpace);
             } else {
-              whiteSpaces.push(region);
+
+              // these criteria need to be refactored into a single method that handles
+              // quality and merging.
+              let overlapsTooMuch = whiteSpaces.some(space => {
+                let overlap = space.overlap(region);
+                if (overlap){
+                  return [overlap.area / region.area, overlap.area / space.area].some(ratio => ratio > 0.90);
+                }
+              });
+              
+              if (!overlapsTooMuch) { whiteSpaces.push(region); }
             }
             //elements.push(region);
             whiteSpaces = whiteSpaces.sort((a,b)=>b.height-a.height);
@@ -446,7 +469,7 @@ class TextCollection {
       //console.log("leftRegion Elements:", leftRegion.elements);
       //console.log("rightRegion Elements:", rightRegion.elements);
     }
-    whiteSpaces.forEach( space => space.drawOnto(this.context, {color: 'green'}));
+    //whiteSpaces.forEach( space => space.drawOnto(this.context, {color: 'green'}));
     //debugger;
     this.whiteSpaces = whiteSpaces;
     return whiteSpaces;
@@ -575,7 +598,8 @@ class TextCollection {
 
   mungeLine(line){
     return line.replace(/‘‘/g, '“')
-               .replace(/’’/g, '”');
+               .replace(/’’/g, '”')
+               .replace(/\s+/, ' ');
   }
 
   async dumpDocX() {
