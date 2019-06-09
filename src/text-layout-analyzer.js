@@ -1,41 +1,8 @@
-
-/*
-  ToDos:
-    - topologically sort the text elements
-    - create a class for individual text elements & their fields
-    - use canvas to calculate the space of a width and other things for layout analysis
-    - group text into lines
-    - group lines into paragraphs
-    - identify table-ish things
-
-  Notes:
-
-    Much of the calculations for what is/isn't a line or paragraph is going to have to be
-    inferred based on heuristics to start with (lol maybe a neural network later).  
-    So, helpfully, it should be possible to calculate the width of a space in the various 
-    different fonts on the page.  Likewise it should be possible to calculate the average 
-    line height and spacing.
-
-    Font heights and the space of a width can be calculated per `pdfjs` font style.
-
-    Two elements can be merged if they are horizontally adjacent to each other by a space
-    that is <= the width of a space
-
-    Text elements should be hierarchically clustered.  Generally speaking we know that
-    documents are grouped into lines (e.g. elements which share a `y` position w/in some
-    tolerance) are on the same line (although clustering may be blocked by higher level
-    organization, such as column breaks).
-
-    Thus, clustering can operate by first scanning the document from top to bottom and
-    breaking the document into lines.  From there, lines can be clustered into blocks.
-    Blocks should 
-
-*/
 import docx from 'docx';
 import FileSaver from 'file-saver';
 import Region from './region';
 
-class TextCollection {
+class TextLayoutAnalyzer {
 
   constructor(text, viewport, context) {
     this.styles = text.styles;
@@ -695,4 +662,4 @@ class TextCollection {
   }
 }
 
-export default TextCollection;
+export default TextLayoutAnalyzer;

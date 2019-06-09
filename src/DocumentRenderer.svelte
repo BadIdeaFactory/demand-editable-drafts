@@ -23,9 +23,9 @@
   let pageRendering = false;
   let pageNumPending = null;
   let hidePDFText = false;
-  export let textCollection;
+  export let layoutAnalyzer;
   
-  import TextCollection from './text-collection.js';
+  import TextLayoutAnalyzer from './text-layout-analyzer.js';
   import docx from 'docx';
   import FileSaver from 'file-saver';
 
@@ -40,10 +40,10 @@
     External API for manipulating pages.
   */
 
-  async function getTextCollection(){
+  async function getTextLayoutAnalyzer(){
     let text = await getText();
-    textCollection = new TextCollection(text, viewport, ctx);
-    return textCollection;
+    layoutAnalyzer = new TextLayoutAnalyzer(text, viewport, ctx);
+    return layoutAnalyzer;
   }
 
   export async function dumpDocX() {
@@ -51,11 +51,11 @@
 
     for (let num = 1; num <= pdfDoc.numPages ; num++) {
       await getPage(num);
-      let textCollection = await getTextCollection();
-      textCollection.calculateStyles();
+      let layoutAnalyzer = await getTextLayoutAnalyzer();
+      layoutAnalyzer.calculateStyles();
       let options = {};
       if (num == 1) { options.noPageBreak = true; }
-      textCollection.appendTextToDocX(doc, options);
+      layoutAnalyzer.appendTextToDocX(doc, options);
     }
 
     let packer = new docx.Packer();
@@ -68,19 +68,19 @@
   }
 
   export async function drawTextBounds() {
-    let textCollection = await getTextCollection();
-    textCollection.calculateStyles();
+    let layoutAnalyzer = await getTextLayoutAnalyzer();
+    layoutAnalyzer.calculateStyles();
 
     let textLayer = await document.createElement('div');
     textLayer.style = `
       height: ${pageCanvas.height}px; 
       width: ${pageCanvas.width}px;`;
 
-    textCollection.appendTextElementsTo(textLayer);
+    layoutAnalyzer.appendTextElementsTo(textLayer);
     replaceTextLayer(textLayer);
-    textCollection.appendWhiteSpaceTo(textLayer);
-    textCollection.group();
-    return textCollection;
+    layoutAnalyzer.appendWhiteSpaceTo(textLayer);
+    layoutAnalyzer.group();
+    return layoutAnalyzer;
   }
 
   export function getPDF() {
