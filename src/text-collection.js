@@ -443,15 +443,10 @@ class TextCollection {
 
             let drawSets = (candidate, sets) => {
               this.context.clearRect(0,0,this.context.canvas.width, this.context.canvas.height);
-              [["supersets", "aqua"],
-               ["subsets", "purple"],
-               ["identical", "yellow"],
-               ["disjoint", "lime"],
-               ["other", "grey"]
+              [["supersets", "aqua"], ["subsets", "purple"], ["identical", "yellow"],
+               ["disjoint", "lime"], ["other", "grey"]
               ].forEach( ([key, color]) => {
-                (sets[key] || []).forEach( item => {
-                  item.drawOnto(this.context, {color: color});
-                });
+                (sets[key] || []).forEach(item=>item.drawOnto(this.context, {color: color}));
               });
               candidate.drawOnto(this.context, {color: "red" });
               debugger;
@@ -461,38 +456,31 @@ class TextCollection {
               let match = compareRegions(region, space);
               //drawComparison(region, space, match);
 
-                     if (match.identical) {
-                buckets.identical.push(space); // get a list of identical partitions
-              } else if (match.superset) {
-                buckets.subsets.push(space);   // get a list of items that are a subset of region
-              } else if (match.subset) {
-                buckets.supersets.push(space); // get a list of items that are supersets of region
-              } else if (match.disjoint) {
-                buckets.disjoint.push(space);  // get a list of disjoint regions
-              } else {
-                buckets.other.push(space);     // lol idk
-              }
+                   if ( match.identical ) { buckets.identical.push(space); }
+              else if ( match.superset  ) { buckets.subsets.push(space);   }
+              else if ( match.subset    ) { buckets.supersets.push(space); }
+              else if ( match.disjoint  ) { buckets.disjoint.push(space);  }
+              else                        { buckets.other.push(space);     }
               return buckets;
             }, { supersets: [], subsets: [], identical: [], disjoint:[], other:[] });
 
-            //console.log(matches);
-            // if there's a better match to divide this region don't push it.
-            // if this space is a better match for another region, splice it out.
-            // otherwise just push it.
-            //whiteSpaces.forEach(s => s.drawOnto(this.context,{color:'yellow'}));
-
-            // clear out all of the items which are a subset of this region.
+            // clear out all of the items which are subsumed by this region.
             whiteSpaces = whiteSpaces.filter(space => {
               return !(matches.subsets.includes(space) || matches.identical.includes(space));
             });
+
+            // then pick the tallest, then widest region that divides items
+            // the way this region does.
             let largestItem = [...matches.identical, region].sort((a,b)=>{
               if (b.height==a.height){ return b.width - a.width; }
               return b.height-a.height;
             })[0];
 
             //drawSets(largestItem, matches);
+            // push the element ONLY IF there are no regions which
+            // subsume the largest item.
             if (matches.supersets.length == 0) {
-              console.log(matches);
+              //console.log(matches);
               whiteSpaces.push(largestItem);
             }
           } else {
@@ -500,22 +488,7 @@ class TextCollection {
           }
         }
       });
-      //debugger;
-      //this.context.clearRect(0,0,this.context.canvas.width, this.context.canvas.height);
-      //pivot.drawOnto(this.context);
-      //upperRegion.drawOnto(this.context, {color: 'purple'});
-      //lowerRegion.drawOnto(this.context, {color: 'green'});
-      //leftRegion.drawOnto(this.context, {color: 'orange'});
-      //rightRegion.drawOnto(this.context, {color: 'red'});
-      //console.log("Pivot", pivot);
-      //console.log("upperRegion Elements:", upperRegion.items);
-      //console.log("lowerRegion Elements:", lowerRegion.items);
-      //console.log("leftRegion Elements:", leftRegion.items);
-      //console.log("rightRegion items:", rightRegion.items);
     }
-    //whiteSpaces.forEach( space => space.drawOnto(this.context, {color: 'green'}));
-    console.log(whiteSpaces);
-    //debugger;
     this.whiteSpaces = whiteSpaces;
     return whiteSpaces;
   }
