@@ -379,8 +379,12 @@ class TextCollection {
           // if it meaningfully divides any text elements.
           [region.leftPartition, region.rightPartition] = canvasBounds.partition(region);
           // we should memoize these results somewhere.
+          let itemsOverlap = (a, b) => !(a.bottom < b.top || a.top > b.bottom);
           let partitionsText = (reg) => {
-            return (reg.leftPartition.items.length == 0 || reg.rightPartition.items.length == 0);
+            let leftItems  = reg.leftPartition.items;
+            let rightItems = reg.rightPartition.items;
+            return (leftItems.length != 0 && rightItems.length != 0) && 
+                   (leftItems.some(l=>rightItems.some(r=>itemsOverlap(l,r)))); 
           };
 
           let fontCount = items.reduce((fonts, item) => {
@@ -394,10 +398,9 @@ class TextCollection {
           let itemCount = Object.values(fontCount).reduce((sum,num)=>sum+num, 0);
           let weightedAverageSpaceWidth = weightedAverageNumerator / itemCount;
 
-          let isMeaningfulWhiteSpace = !( partitionsText(region) ||
-                                          region.aspectRatio > 1 ||
-                                          //whiteSpaces.find(space => space.equalBounds(region)) ||
-                                          region.width < weightedAverageSpaceWidth );
+          let isMeaningfulWhiteSpace = !( !partitionsText(region) ||
+                                           region.aspectRatio > 1 ||
+                                           region.width < weightedAverageSpaceWidth );
           if ( isMeaningfulWhiteSpace ){  
             // this is causing troubles.
 
