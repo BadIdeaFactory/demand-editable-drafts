@@ -98,19 +98,22 @@ class Region {
     if (!['top', 'bottom', 'left', 'right'].every(key => Object.keys(obstacle).includes(key))) {
       throw "obstacle must have `top`, `bottom`, `left` and `right` keys";
     }
-    let leftRegion = new Region({
-      top:    obstacle.top,
-      bottom: obstacle.bottom,
-      left:   this.left,
-      right:  obstacle.left,
+    let regions = {};
+    regions.top = new Region({
+      top:this.top,   bottom:obstacle.top, 
+      left:this.left, right:this.right}, this.items, this.obstacles);
+    regions.bottom = new Region({
+      top:  obstacle.bottom, bottom:this.bottom, 
+      left: this.left,       right: this.right}, this.items, this.obstacles);
+    regions.left = new Region({ 
+      top:  obstacle.top, bottom: obstacle.bottom,
+      left: this.left,    right:  obstacle.left,
     }, this.items, this.obstacles);
-    let rightRegion = new Region({
-      top:    obstacle.top,
-      bottom: obstacle.bottom,
-      left:   obstacle.right,
-      right:  this.right,
+    regions.right = new Region({
+      top:  obstacle.top,   bottom: obstacle.bottom,
+      left: obstacle.right, right:  this.right, 
     }, this.items, this.obstacles);
-    return [leftRegion, rightRegion];
+    return regions;
   }
 
   equalBounds(region) {

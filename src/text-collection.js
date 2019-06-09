@@ -341,12 +341,8 @@ class TextCollection {
     let elements = mergedItems.map((item) => new Region(item));
 
     // We're using the canvas as the initial bounding box.
-    let canvasBounds = new Region({
-      top: 0,
-      bottom: this.context.canvas.height,
-      left: 0,
-      right: this.context.canvas.width,
-    }, elements);
+    let canvasBounds = new Region({ top: 0, bottom: this.context.canvas.height,
+                                    left: 0, right: this.context.canvas.width,}, elements);
 
     let queue = [canvasBounds];
     let whiteSpaces = [];
@@ -377,14 +373,36 @@ class TextCollection {
         } else {
           // otherwise the region is empty, and we should figure out
           // if it meaningfully divides any text elements.
-          [region.leftPartition, region.rightPartition] = canvasBounds.partition(region);
+          let subregions = canvasBounds.partition(region);
+          region.leftPartition = subregions.left;
+          region.rightPartition = subregions.right;
           // we should memoize these results somewhere.
           let itemsOverlap = (a, b) => !(a.bottom < b.top || a.top > b.bottom);
-          let partitionsText = (reg) => {
-            let leftItems  = reg.leftPartition.items;
-            let rightItems = reg.rightPartition.items;
-            return (leftItems.length != 0 && rightItems.length != 0) && 
-                   (leftItems.some(l=>rightItems.some(r=>itemsOverlap(l,r)))); 
+
+          let compactRegion = (region) => {
+            let leftItems  = subregions.left.items;
+            let rightItems = subregions.right.items;
+            let intersections = [];
+            leftItems.forEach( l => {
+              rightItems.forEach(r => {
+                if (itemsOverlap(l,r)) { intersections.push([l,r]); }
+              });
+            });
+            let highestIntersection = 0;
+            let lowestIntersection  = 0;
+            if (intersections.length > 0) {
+              let intersectionTops = intersections.flat().map(i=>i.top);
+              let intersectionBottoms = intersections.flat().map(i=>i.bottom);
+              //console.log(intersectionTops, intersectionBottoms);
+              highestIntersection = Math.min(...intersectionTops);
+              lowestIntersection  = Math.max(...intersectionBottoms);
+            }
+            [region, subregions.left, subregions.right].forEach(reg => reg.setBounds({
+              top: highestIntersection,
+              bottom: lowestIntersection,
+              left: reg.left,
+              right: reg.right,
+            }, reg.items, reg.obstacles));
           };
 
           let fontCount = items.reduce((fonts, item) => {
@@ -398,9 +416,8 @@ class TextCollection {
           let itemCount = Object.values(fontCount).reduce((sum,num)=>sum+num, 0);
           let weightedAverageSpaceWidth = weightedAverageNumerator / itemCount;
 
-          let isMeaningfulWhiteSpace = !( !partitionsText(region) ||
-                                           region.aspectRatio > 1 ||
-                                           region.width < weightedAverageSpaceWidth );
+          compactRegion(region);
+          let isMeaningfulWhiteSpace = !( region.aspectRatio > 1 || region.width < weightedAverageSpaceWidth );
           if ( isMeaningfulWhiteSpace ){  
             // this is causing troubles.
 
