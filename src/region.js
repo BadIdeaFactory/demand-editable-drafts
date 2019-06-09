@@ -32,8 +32,8 @@ class Region {
       this[key] = value; // Math.floor(value);
     });
     this.calculateData();
-    if (items && items.length > 0) { this.setItems(items); }
-    if (obstacles && obstacles.length > 0) { this.setObstacles(obstacles); }
+    if (items) { this.setItems(items); }
+    if (obstacles) { this.setObstacles(obstacles); }
   }
 
   calculateData() {
@@ -50,6 +50,13 @@ class Region {
 
   setItems(candidates) {
     this.items = candidates.filter(el => this.intersects(el));
+  }
+
+  compareItems(other) {
+    let otherHasEveryItem = this.items.every(item => other.items.includes(item));
+    let thisHasOtherItems = other.items.every(item => this.items.includes(item));
+
+    return [thisHasOtherItems, otherHasEveryItem];
   }
 
   setObstacles(candidates) {

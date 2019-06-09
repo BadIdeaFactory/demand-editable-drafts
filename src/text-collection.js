@@ -48,8 +48,8 @@ class TextCollection {
     this.styleBuf = ['left: ', 0, 'px; top: ', 0, 'px; font-size: ', 0,
       'px; font-family: ', '', ';'];
 
-    let colors = ["Silver", "Gray", "Black", "Red", "Maroon", "Yellow", "Olive",
-      "Lime", "Green", "Aqua", "Teal", "Blue", "Navy", "Fuchsia", "Purple"];
+    let colors = ["Gray", "Black", "Red", "Maroon", "Yellow", "Olive", "Lime", 
+                  "Green", "Aqua", "Teal", "Blue", "Navy", "Fuchsia", "Purple"];
     Object.values(this.styles).forEach((style) => {
       let color = colors.splice(Math.floor(Math.random() * colors.length), 1);
       style.color = color;
@@ -371,44 +371,18 @@ class TextCollection {
       );
 
       regions.forEach((region) => {
-        // seems like there should be a better way to filter the elements
-        // since it's gotta be done twice.
-        let intersectsElement = elements.some( el => el !== pivot && region.intersects(el));
-        if (intersectsElement){
-          queue.push(region);
+        // if this region contains text elements
+        if (region.items.length > 0){
+          queue.push(region); // queue it for further subdivision
         } else {
-
+          // otherwise the region is empty, and we should figure out
+          // if it meaningfully divides any text elements.
+          [region.leftPartition, region.rightPartition] = canvasBounds.partition(region);
           // we should memoize these results somewhere.
-          let partitionsText = (container, region) => {
-            let [left, right] = container.partition(region);
-            return (left.items.length == 0 || right.items.length == 0);
+          let partitionsText = (reg) => {
+            return (reg.leftPartition.items.length == 0 || reg.rightPartition.items.length == 0);
           };
 
-          let isSubset = (a, b) => a.items.every(item => b.items.indexOf(item) > -1);
-
-          let equivalentPartitions = (container, partitions, partition) => {
-            let equivalent = (region, firstPartition, secondPartition) => {
-              let [firstLeft, firstRight] = region.partition(firstPartition);
-              let [secondLeft, secondRight] = region.partition(secondPartition);
-
-              let equivalentLeft = isSubset(firstLeft, secondLeft) && isSubset(secondLeft, firstLeft);
-              let equivalentRight = isSubset(firstRight, secondRight) && isSubset(secondRight, firstRight);
-              return equivalentLeft && equivalentRight;
-            };
-            return partitions.filter(other => equivalent(container, partition, other));
-          };
-
-          let equalOrBetterPartitions = (container, partitions, partition) => {
-            let firstPartitionBeatsSecond = (region, firstPartition, secondPartition) => {
-              let [firstLeft, firstRight] = region.partition(firstPartition);
-              let [secondLeft, secondRight] = region.partition(secondPartition);
-              return isSubset(secondLeft, firstLeft) || isSubset(secondRight, firstRight);
-            };
-            return partitions.filter(other => firstPartitionBeatsSecond(container, other, partition));
-          };
-
-          let matches = equalOrBetterPartitions(canvasBounds, whiteSpaces, region);
-          
           let fontCount = items.reduce((fonts, item) => {
             fonts[item.fontName] = ((fonts[item.fontName] || 0) + 1);
             return fonts;
@@ -420,47 +394,107 @@ class TextCollection {
           let itemCount = Object.values(fontCount).reduce((sum,num)=>sum+num, 0);
           let weightedAverageSpaceWidth = weightedAverageNumerator / itemCount;
 
-          let isMeaningfulWhiteSpace = !( partitionsText(canvasBounds, region) ||
+          let isMeaningfulWhiteSpace = !( partitionsText(region) ||
                                           region.aspectRatio > 1 ||
-                                          matches.length > 0 ||
                                           //whiteSpaces.find(space => space.equalBounds(region)) ||
                                           region.width < weightedAverageSpaceWidth );
-          if ( isMeaningfulWhiteSpace ){
+          if ( isMeaningfulWhiteSpace ){  
+            // this is causing troubles.
 
-            let extendableElement = whiteSpaces.find( space => {
-              // an element is extendable if it shares two parallel boundaries 
-              // and intersects with the region.
-              return (
-                ( space.top == region.top && space.bottom == region.bottom ||
-                  space.left == region.left && space.right == region.right  
-                ) && 
-                space.intersects(region)
-              );
+            let isIdentical = (left, right) => [...left, ...right].every(bool => bool);
+            let isDisjoint  = (left, right) => (left.every(bool=>!bool) || right.every(bool=>!bool));
+            let isSuperset =  (left, right) => {
+              // on the left side...
+              // the first region contains all of the second region's items.
+              // the second region contains all of the first region's items.
+              let [leftFirstContainsSecond, leftSecondContainsFirst] = left;
+              let [rightFirstContainsSecond, rightSecondContainsFirst] = right;
+
+              // region's left & right MUST contain all of the elements of
+              // space's left & right AND 
+              return (leftFirstContainsSecond && rightFirstContainsSecond &&
+                      (!leftSecondContainsFirst || !rightSecondContainsFirst));
+            };
+
+            let compareRegions = (first, second) => {
+              let compareFirstToSecond = [first.leftPartition.compareItems(second.leftPartition),
+                                          first.rightPartition.compareItems(second.rightPartition)];
+              let compareSecondToFirst = [second.leftPartition.compareItems(first.leftPartition),
+                                          second.rightPartition.compareItems(first.rightPartition)];
+              return {
+                identical: isIdentical(...compareFirstToSecond),
+                subset:    isSuperset(...compareSecondToFirst),
+                superset:  isSuperset(...compareFirstToSecond),
+                disjoint:  isDisjoint(...compareFirstToSecond),
+                bools: {
+                  compareFirstToSecond: compareFirstToSecond.flat(),
+                  compareSecondToFirst: compareSecondToFirst.flat(),
+                },
+              };
+            };
+
+            let drawComparison = (a,b, match) => {
+              this.context.clearRect(0,0,this.context.canvas.width, this.context.canvas.height);
+              a.drawOnto(this.context, {color: "red"});
+              b.drawOnto(this.context, {color: "yellow"});
+              console.log(match);
+              debugger;
+            };
+
+            let drawSets = (candidate, sets) => {
+              this.context.clearRect(0,0,this.context.canvas.width, this.context.canvas.height);
+              [["supersets", "aqua"],
+               ["subsets", "purple"],
+               ["identical", "yellow"],
+               ["disjoint", "lime"],
+               ["other", "grey"]
+              ].forEach( ([key, color]) => {
+                (sets[key] || []).forEach( item => {
+                  item.drawOnto(this.context, {color: color});
+                });
+              });
+              candidate.drawOnto(this.context, {color: "red" });
+              debugger;
+            };
+
+            let matches = whiteSpaces.reduce((buckets, space)=>{
+              let match = compareRegions(region, space);
+              //drawComparison(region, space, match);
+
+                     if (match.identical) {
+                buckets.identical.push(space); // get a list of identical partitions
+              } else if (match.superset) {
+                buckets.subsets.push(space);   // get a list of items that are a subset of region
+              } else if (match.subset) {
+                buckets.supersets.push(space); // get a list of items that are supersets of region
+              } else if (match.disjoint) {
+                buckets.disjoint.push(space);  // get a list of disjoint regions
+              } else {
+                buckets.other.push(space);     // lol idk
+              }
+              return buckets;
+            }, { supersets: [], subsets: [], identical: [], disjoint:[], other:[] });
+
+            //console.log(matches);
+            // if there's a better match to divide this region don't push it.
+            // if this space is a better match for another region, splice it out.
+            // otherwise just push it.
+            //whiteSpaces.forEach(s => s.drawOnto(this.context,{color:'yellow'}));
+
+            // clear out all of the items which are a subset of this region.
+            whiteSpaces = whiteSpaces.filter(space => {
+              return !(matches.subsets.includes(space) || matches.identical.includes(space));
             });
-            
-            if (extendableElement){
-              let extendedSpace = new Region({
-                top: Math.min(extendableElement.top, region.top),
-                bottom: Math.max(extendableElement.bottom, region.bottom),
-                left: Math.min(extendableElement.left, region.left),
-                right: Math.max(extendableElement.right, region.right)
-              });
-              whiteSpaces.splice(whiteSpaces.indexOf(extendableElement), 1, extendedSpace);
-            } else {
+            let largestItem = [...matches.identical, region].sort((a,b)=>{
+              if (b.height==a.height){ return b.width - a.width; }
+              return b.height-a.height;
+            })[0];
 
-              // these criteria need to be refactored into a single method that handles
-              // quality and merging.
-              let overlapsTooMuch = whiteSpaces.some(space => {
-                let overlap = space.overlap(region);
-                if (overlap){
-                  return [overlap.area / region.area, overlap.area / space.area].some(ratio => ratio > 0.90);
-                }
-              });
-              
-              if (!overlapsTooMuch) { whiteSpaces.push(region); }
+            //drawSets(largestItem, matches);
+            if (matches.supersets.length == 0) {
+              console.log(matches);
+              whiteSpaces.push(largestItem);
             }
-            //elements.push(region);
-            whiteSpaces = whiteSpaces.sort((a,b)=>b.height-a.height);
           } else {
             //console.log("horizontal", region.aspectRatio);
           }
@@ -480,6 +514,7 @@ class TextCollection {
       //console.log("rightRegion items:", rightRegion.items);
     }
     //whiteSpaces.forEach( space => space.drawOnto(this.context, {color: 'green'}));
+    console.log(whiteSpaces);
     //debugger;
     this.whiteSpaces = whiteSpaces;
     return whiteSpaces;
