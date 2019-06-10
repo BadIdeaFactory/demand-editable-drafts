@@ -5,11 +5,11 @@ import Region from './region';
 class TextLayoutAnalyzer {
 
   constructor(text, viewport, context) {
-    this.styles = text.styles;
-    this.items = text.items;
+    this.styles   = text.styles;
+    this.items    = text.items;
     this.viewport = viewport;
-    this.context = context;
-
+    this.context  = context;
+    this.whiteSpace = [];
     this.groups = [];
 
     this.styleBuf = ['left: ', 0, 'px; top: ', 0, 'px; font-size: ', 0,
@@ -44,8 +44,18 @@ class TextLayoutAnalyzer {
         }
       },
       orderByLeft: (a, b) => a.cssStyles.left - b.cssStyles.left,
-
     };
+
+    this.region = this._calculateRegion();
+  }
+
+  _calculateRegion() {
+    let canvasRegion = new Region(
+      { top:  0, bottom: this.context.canvas.height,
+        left: 0, right:  this.context.canvas.width,
+    }, this.items);
+
+    return canvasRegion;
   }
 
   // Cribbed from pdfjs utils
@@ -204,9 +214,7 @@ class TextLayoutAnalyzer {
     });
   }
 
-  sort() {
-    return this.items.sort(this._sorters["orderItemsByTopLeft"]);
-  }
+  sort() { return this.items.sort(this._sorters["orderItemsByTopLeft"]); }
 
   mergeSmallCaps(items) {
     let regions = items.map((item) => {let region = new Region(item); region.item = item; return region; });
@@ -245,8 +253,7 @@ class TextLayoutAnalyzer {
           right  : (lineBounds.right)  ? Math.max(lineBounds.right, region.right)   : region.right,
         };
       }, {});
-      let capsLine = new Region(capsLineBoundaries);
-      capsLine.items = capsLineRegions.map(region => region.item);
+      let capsLine = new Region(capsLineBoundaries, items);
       if (!capsLineRegions.every(region=>capsLine.contains(region))) { debugger; }
       capsLine.drawOnto(this.context);
       return capsLine;
@@ -340,7 +347,7 @@ class TextLayoutAnalyzer {
         } else {
           // otherwise the region is empty, and we should figure out
           // if it meaningfully divides any text elements.
-          let subregions = canvasBounds.partition(region);
+          let subregions = canvasBounds.intersectingPartition(region);
           region.leftPartition = subregions.left;
           region.rightPartition = subregions.right;
           // we should memoize these results somewhere.
@@ -477,6 +484,7 @@ class TextLayoutAnalyzer {
       });
     }
     this.whiteSpaces = whiteSpaces;
+    this.region.setObstacles(this.whiteSpaces);
     return whiteSpaces;
   }
 

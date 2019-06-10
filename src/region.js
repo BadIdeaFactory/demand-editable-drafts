@@ -93,6 +93,27 @@ class Region {
     return mostCentered;
   }
 
+  intersectingPartition(obstacle) {
+    if (!['top', 'bottom', 'left', 'right'].every(key => Object.keys(obstacle).includes(key))) {
+      throw "obstacle must have `top`, `bottom`, `left` and `right` keys";
+    }
+    let regions = {};
+    regions.top = new Region({
+      top:this.top,   bottom:obstacle.top, 
+      left:obstacle.left, right:obstacle.right}, this.items, this.obstacles);
+    regions.bottom = new Region({
+      top:  obstacle.bottom, bottom:this.bottom, 
+      left: obstacle.left,   right: obstacle.right}, this.items, this.obstacles);
+    regions.left = new Region({ 
+      top:  obstacle.top,  bottom: obstacle.bottom,
+      left: this.left,     right:  obstacle.left,
+    }, this.items, this.obstacles);
+    regions.right = new Region({
+      top:  obstacle.top,   bottom: obstacle.bottom,
+      left: obstacle.right, right:  this.right, 
+    }, this.items, this.obstacles);
+    return regions;
+  }
   
   partition(obstacle) {
     if (!['top', 'bottom', 'left', 'right'].every(key => Object.keys(obstacle).includes(key))) {
@@ -106,11 +127,11 @@ class Region {
       top:  obstacle.bottom, bottom:this.bottom, 
       left: this.left,       right: this.right}, this.items, this.obstacles);
     regions.left = new Region({ 
-      top:  obstacle.top, bottom: obstacle.bottom,
-      left: this.left,    right:  obstacle.left,
+      top:  this.top,  bottom: this.bottom,
+      left: this.left, right:  obstacle.left,
     }, this.items, this.obstacles);
     regions.right = new Region({
-      top:  obstacle.top,   bottom: obstacle.bottom,
+      top:  this.top,       bottom: this.bottom,
       left: obstacle.right, right:  this.right, 
     }, this.items, this.obstacles);
     return regions;
