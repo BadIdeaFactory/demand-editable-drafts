@@ -337,7 +337,7 @@ class TextLayoutAnalyzer {
         region => region.width > 0 && region.height > 0
       );
 
-      regions.forEach((region) => {
+      let processRegion = (region) => {
         // if this region contains text elements
         if (region.items.length > 0){
           queue.push(region); // queue it for further subdivision
@@ -443,29 +443,31 @@ class TextLayoutAnalyzer {
               debugger;
             };
 
-            let matches = whiteSpaces.reduce((buckets, space)=>{
+            let categorizeSpaces = (buckets, space) => {
+              console.log("categorizingSpaces");
               let match = compareRegions(region, space);
               //drawComparison(region, space, match);
-
                    if ( match.identical ) { buckets.identical.push(space); }
               else if ( match.superset  ) { buckets.subsets.push(space);   }
               else if ( match.subset    ) { buckets.supersets.push(space); }
               else if ( match.disjoint  ) { buckets.disjoint.push(space);  }
               else                        { buckets.other.push(space);     }
               return buckets;
-            }, { supersets: [], subsets: [], identical: [], disjoint:[], other:[] });
+            };
+            let matches = whiteSpaces.reduce(categorizeSpaces, 
+              { supersets: [], subsets: [], identical: [], disjoint:[], other:[] });
 
             // clear out all of the items which are subsumed by this region.
-            whiteSpaces = whiteSpaces.filter(space => {
-              return !(matches.subsets.includes(space) || matches.identical.includes(space));
-            });
+            let subsumedByRegion = space => !(matches.subsets.includes(space) || matches.identical.includes(space));
+            whiteSpaces = whiteSpaces.filter(subsumedByRegion);
 
             // then pick the tallest, then widest region that divides items
             // the way this region does.
-            let largestItem = [...matches.identical, region].sort((a,b)=>{
+            let byTallestThenWidest = (a,b)=>{
               if (b.height==a.height){ return b.width - a.width; }
               return b.height-a.height;
-            })[0];
+            };
+            let largestItem = [...matches.identical, region].sort(byTallestThenWidest)[0];
 
             //drawSets(largestItem, matches);
             // push the element ONLY IF there are no regions which
@@ -478,7 +480,8 @@ class TextLayoutAnalyzer {
             //console.log("horizontal", region.aspectRatio);
           }
         }
-      });
+      };
+      regions.forEach(processRegion);
     }
     this.whiteSpaces = whiteSpaces;
     this.region.setObstacles(this.whiteSpaces);
