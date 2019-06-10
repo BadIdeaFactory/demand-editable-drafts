@@ -53,8 +53,7 @@ class TextLayoutAnalyzer {
     let canvasRegion = new Region(
       { top:  0, bottom: this.context.canvas.height,
         left: 0, right:  this.context.canvas.width,
-    }, this.items);
-
+    });
     return canvasRegion;
   }
 
@@ -489,6 +488,12 @@ class TextLayoutAnalyzer {
   }
 
   groupRegions() {
+    // wtf why isn't items set already.
+    // this needs to be called after calculateStyles called so that
+    // the items have defined offsetWidth, offsetHeight, offsetTop and offsetLeft
+    let itemRegions = this.items.map(i => {let r = new Region(i); r.item = i; return r;});
+    this.region.setItems(itemRegions);
+    console.log(this.region.items.length);
     this.regions = this.region.partitionByObstacles();
   }
 
@@ -543,40 +548,9 @@ class TextLayoutAnalyzer {
     return this.groups;
   }
 
-  dumpText() {
-    return this.groupTextIntoLines().map((group) => {
-      let insertSpaces = (items, item, index) => {
-        items.push(item.str);
-        let nextItem = group.items[index + 1];
-
-        let spaceNeededBetween = (first, second) => {
-
-          let firstFont = this.styles[first.fontName];
-          let secondFont = this.styles[second.fontName];
-          let widthOfSpace = Math.min(firstFont.spaceWidth, secondFont.spaceWidth);
-
-          let firstRight = first.element.offsetWidth + first.element.offsetLeft;
-          //console.log(firstRight, first.cssStyles.width + first.cssStyles.left);
-          // (b.left - a.right) > widthOfSpace
-          if ((second.element.offsetLeft - firstRight) >= (widthOfSpace)) { 
-            //debugger;
-            //console.log(first.element, second.element);
-            //console.log(second.element.offsetLeft - firstRight, widthOfSpace);
-          }
-
-          return (second.element.offsetLeft - firstRight) >= (widthOfSpace);
-        };
-
-        if (nextItem && spaceNeededBetween(item, nextItem)) {
-          items.push(" ");
-        }
-        return items;
-      };
-      let textItems = group.items.reduce(insertSpaces, []);
-
-      let line = this.mungeLine(textItems.join(''));
-      return line;
-    }).join('\n');
+  dumpText(){
+    this.groupRegions();
+    return this.region.getText();
   }
 
   mungeLine(line){

@@ -135,9 +135,12 @@ class Region {
 
   partitionByObstacles() {
     if (this.obstacles.length > 0) {
-      this.regions = this.partition(this.obstacles[0]);
+      this.regions = {};
+      [Object.entries(this.partition(this.obstacles[0], ['top', 'bottom'])), 
+       Object.entries(this.intersectingPartition(this.obstacles[0], ['left', 'right']))
+      ].flat().map(([key,value])=> this.regions[key] = value);
     } else {
-      this.regions = [];
+      this.regions = {};
     }
     Object.values(this.regions).forEach(region => region.partitionByObstacles());
     return this.regions;
@@ -185,6 +188,55 @@ class Region {
     context.strokeStyle = (style.color || "blue");
     context.setLineDash([6]);
     context.strokeRect(this.left, this.top, this.width, this.height);
+  }
+
+  getText() {
+    let byTopLeft = (a, b) => {
+      // if the y coordinates are the same
+      if (a.top == b.top) {
+        // determine what the x position is
+        return a.left - b.left;
+      } else {
+        // otherwise just sort these two points based on the y.
+        return a.top - b.top;
+      }
+    };
+    let text;
+    if (Object.entries(this.regions).length > 0) {
+      text = Object.values(this.regions).sort(byTopLeft).map( r => r.getText() ).join("\n");
+    } else {
+      let groupByLine = (lines, item) => {
+        let overlap = lines.find(line => line.intersects(item));
+        if (!overlap) {
+          overlap = new Region({
+            top: item.top,
+            bottom: item.bottom,
+            left: 0,
+            right: this.right,
+          }, [item]);
+          lines.push(overlap);
+        } else {
+          overlap.setBounds({
+            top: Math.min(overlap.top, item.top),
+            bottom: Math.max(overlap.bottom, item.bottom),
+            left: 0,
+            right: this.right,
+          }, [...overlap.items, item]);
+        }
+        return lines;
+      };
+
+      let items = this.items.sort((a,b)=>b.height-a.height);
+      let lines = items.reduce(groupByLine, []);
+      text = lines.map(line => {
+        let str = line.items.map(i => i.item.str).join(" ");
+        console.log(str);
+        return str;
+      }).join("\n");
+      //text = items.map(i => i.item.str).join(" ") + "\n";
+    }
+
+    return text;
   }
 }
 
