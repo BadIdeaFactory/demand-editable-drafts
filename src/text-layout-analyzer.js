@@ -329,12 +329,9 @@ class TextLayoutAnalyzer {
       // find the element that divides the region most evenly
       let pivot = bounds.findPivot();
 
-      let regionItems = bounds.items.filter(element => element !== pivot);
-      let upperRegion = new Region({ top: bounds.top,   bottom: pivot.top,     left: bounds.left, right: bounds.right }, regionItems);
-      let lowerRegion = new Region({ top: pivot.bottom, bottom: bounds.bottom, left: bounds.left, right: bounds.right }, regionItems);
-      let leftRegion  = new Region({ top: bounds.top,   bottom: bounds.bottom, left: bounds.left, right: pivot.left   }, regionItems); 
-      let rightRegion = new Region({ top: bounds.top,   bottom: bounds.bottom, left: pivot.right, right: bounds.right }, regionItems);
-      let regions = [leftRegion, rightRegion, upperRegion, lowerRegion].filter( 
+      //let partitions = bounds.partition(pivot);
+      //let regions = [leftRegion, rightRegion, upperRegion, lowerRegion].filter( 
+      let regions = Object.values(bounds.partition(pivot)).filter(
         // some pivots have boundaries outside of the region.
         // this prevents regions where the left/right or top/bottom boundaries are inverted.
         region => region.width > 0 && region.height > 0
@@ -391,7 +388,7 @@ class TextLayoutAnalyzer {
           let weightedAverageSpaceWidth = weightedAverageNumerator / itemCount;
 
           compactRegion(region);
-          let isMeaningfulWhiteSpace = !( region.aspectRatio > 1 || region.width < weightedAverageSpaceWidth );
+          let isMeaningfulWhiteSpace = !( region.width < weightedAverageSpaceWidth || region.aspectRatio > 1 );
           if ( isMeaningfulWhiteSpace ){  
             // this is causing troubles.
 
