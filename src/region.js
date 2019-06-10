@@ -120,6 +120,7 @@ class Region {
       throw "obstacle must have `top`, `bottom`, `left` and `right` keys";
     }
     let regions = {};
+    let regionObstacles = this.obstacles.filter(o => o !== obstacle);
     regions.top = new Region({
       top:this.top,   bottom:obstacle.top, 
       left:this.left, right:this.right}, this.items, this.obstacles);
