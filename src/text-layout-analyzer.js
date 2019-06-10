@@ -344,7 +344,7 @@ class TextLayoutAnalyzer {
         } else {
           // otherwise the region is empty, and we should figure out
           // if it meaningfully divides any text elements.
-          let subregions = canvasBounds.intersectingPartition(region);
+          let subregions = canvasBounds.intersectingPartition(region, ['left','right']);
           region.leftPartition = subregions.left;
           region.rightPartition = subregions.right;
           // we should memoize these results somewhere.
@@ -483,75 +483,13 @@ class TextLayoutAnalyzer {
       };
       regions.forEach(processRegion);
     }
-    this.whiteSpaces = whiteSpaces;
+    this.whiteSpaces = whiteSpaces.sort(this._sorters.orderByTopLeft);
     this.region.setObstacles(this.whiteSpaces);
-    return whiteSpaces;
+    return this.whiteSpaces;
   }
 
-  // okay we know these documents are legislation.
-  // they have a header on the first N pages.
-  // Once the header is identified, the remainder of the document is
-  // a numbered list of lines, and indentations.
-  group() {
-    // start from the top left, and assume you're in one big region
-    // keep collecting lines until you hit a whiteSpace obstacle.
-    // Then gather all of the of the text objects divided by that obstacle
-    // 
-    this._groups = [];
-    // assume they already have styles calculated.
-    let candidates = this.sort().map(item => {
-      let region = new Region(item);
-      region.item = item;
-      return region;
-    });
-
-    let canvasRegion = new Region({
-      top: 0,
-      bottom: this.context.canvas.height,
-      left: 0,
-      right: this.context.canvas.width,
-    }, candidates);
-
-    let regions = [];
-    // whiteSpaces should be sorted by height
-    let verticalBounds = [];
-    this.whiteSpaces.forEach((space) => {
-      let leftRegion = new Region({
-        top: space.top,
-        bottom: space.bottom,
-        left: canvasRegion.left,
-        right: space.right,
-      }, candidates, this.whiteSpaces);
-      let rightRegion = new Region({
-        top: space.top,
-        bottom: space.bottom,
-        left: space.left,
-        right: canvasRegion.right,
-      }, candidates, this.whiteSpaces);
-  
-      regions.push(leftRegion, rightRegion);
-    });
-
-    regions = regions.sort((a,b)=>a.area-b.area).filter(
-      r1 => !regions.some( r2 => r2!=r1 && r2.contains(r1) )
-    );
-    regions = regions.filter(r1 => {
-      return r1;
-    });
-    regions.forEach(r => r.drawOnto(this.context, {color: "orange"}) );
-
-    let alreadyProcessed = [];
-    // process regions
-    while (regions.length > 0){
-      let region = regions.shift();
-      // find all the partitions w/in 
-    }
-    // process remaining items
-    candidates.forEach(item => {
-      if (!alreadyProcessed.includes(item)){
-
-      }
-    });
+  groupRegions() {
+    this.regions = this.region.partitionByObstacles();
   }
 
   groupTextIntoLines() {

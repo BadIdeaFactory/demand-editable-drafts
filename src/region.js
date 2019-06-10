@@ -93,50 +93,56 @@ class Region {
     return mostCentered;
   }
 
-  intersectingPartition(obstacle) {
+  intersectingPartition(obstacle, keys=['top', 'bottom', 'left', 'right']) {
     if (!['top', 'bottom', 'left', 'right'].every(key => Object.keys(obstacle).includes(key))) {
       throw "obstacle must have `top`, `bottom`, `left` and `right` keys";
     }
     let regions = {};
-    regions.top = new Region({
-      top:this.top,   bottom:obstacle.top, 
-      left:obstacle.left, right:obstacle.right}, this.items, this.obstacles);
-    regions.bottom = new Region({
-      top:  obstacle.bottom, bottom:this.bottom, 
-      left: obstacle.left,   right: obstacle.right}, this.items, this.obstacles);
-    regions.left = new Region({ 
-      top:  obstacle.top,  bottom: obstacle.bottom,
-      left: this.left,     right:  obstacle.left,
-    }, this.items, this.obstacles);
-    regions.right = new Region({
-      top:  obstacle.top,   bottom: obstacle.bottom,
-      left: obstacle.right, right:  this.right, 
-    }, this.items, this.obstacles);
+    let bounds = {
+      top:    { top:  this.top,        bottom: obstacle.top, 
+                left: obstacle.left,   right:  obstacle.right},
+      bottom: { top:  obstacle.bottom, bottom: this.bottom, 
+                left: obstacle.left,   right:  obstacle.right},
+      left:   { top:  obstacle.top,    bottom: obstacle.bottom,
+                left: this.left,       right:  obstacle.left,},
+      right:  { top:  obstacle.top,    bottom: obstacle.bottom,
+                left: obstacle.right,  right:  this.right,   },
+    };
+
+    keys.forEach(key => regions[key] = new Region(bounds[key], this.items, this.obstacles) );
     return regions;
   }
   
-  partition(obstacle) {
+  partition(obstacle, keys=['top', 'bottom', 'left', 'right']) {
     if (!['top', 'bottom', 'left', 'right'].every(key => Object.keys(obstacle).includes(key))) {
       throw "obstacle must have `top`, `bottom`, `left` and `right` keys";
     }
     let regions = {};
-    let regionObstacles = this.obstacles.filter(o => o !== obstacle);
-    regions.top = new Region({
-      top:this.top,   bottom:obstacle.top, 
-      left:this.left, right:this.right}, this.items, this.obstacles);
-    regions.bottom = new Region({
-      top:  obstacle.bottom, bottom:this.bottom, 
-      left: this.left,       right: this.right}, this.items, this.obstacles);
-    regions.left = new Region({ 
-      top:  this.top,  bottom: this.bottom,
-      left: this.left, right:  obstacle.left,
-    }, this.items, this.obstacles);
-    regions.right = new Region({
-      top:  this.top,       bottom: this.bottom,
-      left: obstacle.right, right:  this.right, 
-    }, this.items, this.obstacles);
+    let bounds = {
+      top:    { top:  this.top,        bottom: obstacle.top, 
+                left: this.left,       right:  this.right    },
+      bottom: { top:  obstacle.bottom, bottom: this.bottom, 
+                left: this.left,       right:  this.right    },
+      left:   { top:  this.top,        bottom: this.bottom,
+                left: this.left,       right:  obstacle.left,},
+      right:  { top:  this.top,        bottom: this.bottom,
+                left: obstacle.right,  right:  this.right,   },
+    };
+
+    keys.forEach(key => regions[key] = new Region(bounds[key], this.items, this.obstacles) );
     return regions;
   }
+
+  partitionByObstacles() {
+    if (this.obstacles.length > 0) {
+      this.regions = this.partition(this.obstacles[0]);
+    } else {
+      this.regions = [];
+    }
+    Object.values(this.regions).forEach(region => region.partitionByObstacles());
+    return this.regions;
+  }
+
 
   equalBounds(region) {
     return (
