@@ -23,9 +23,11 @@
   let pageRendering = false;
   let pageNumPending = null;
   let hidePDFText = false;
+  export let billAnalyzer;
   export let layoutAnalyzer;
   
   import TextLayoutAnalyzer from './text-layout-analyzer.js';
+  import BillLayoutAnalyzer from './bill-layout-analyzer.js';
   import docx from 'docx';
   import FileSaver from 'file-saver';
 
@@ -71,7 +73,7 @@
     let layoutAnalyzer = await getTextLayoutAnalyzer();
     layoutAnalyzer.calculateStyles();
 
-    let textLayer = await document.createElement('div');
+    let textLayer = document.createElement('div');
     textLayer.style = `
       height: ${pageCanvas.height}px; 
       width: ${pageCanvas.width}px;`;
@@ -79,7 +81,6 @@
     layoutAnalyzer.appendTextElementsTo(textLayer);
     replaceTextLayer(textLayer);
     layoutAnalyzer.appendWhiteSpaceTo(textLayer);
-    layoutAnalyzer.group();
     return layoutAnalyzer;
   }
 
