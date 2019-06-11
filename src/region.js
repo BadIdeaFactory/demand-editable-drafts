@@ -214,8 +214,10 @@ class Region {
       }
     };
     let text;
-    if (Object.entries(this.regions).length > 0) {
+    if (this.regions && Object.entries(this.regions).length > 0) {
       text = Object.values(this.regions).sort(byTopLeft).map( r => r.getText() ).join("\n");
+    } else if(this.item) {
+      text = this.item.str;
     } else {
       let groupByLine = (lines, item) => {
         let overlap = lines.find(line => line.intersects(item));
