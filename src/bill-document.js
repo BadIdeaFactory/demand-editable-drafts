@@ -1,4 +1,5 @@
 import TextLayoutAnalyzer from './text-layout-analyzer.js';
+import docx from 'docx';
 
 // This class wraps and controls a `pdfjs` document and it's canvas.
 class BillDocument {
@@ -21,6 +22,7 @@ class BillDocument {
   }
 
   async calculateLayout() {
+    let pages = [];
     for (let pageNumber = 1; pageNumber <= this.pageCount ; pageNumber++) {
       let page = await this.getPage(pageNumber);
       let viewport = page.getViewport({scale:1});
@@ -31,17 +33,37 @@ class BillDocument {
 
       let textItems = await page.getTextContent({normalizeWhiteSpace: true});
       let analyzer = new TextLayoutAnalyzer(textItems, viewport, context);
-      this._pages.push(analyzer.calculateLayout());
+      pages.push(analyzer.calculateLayout());
     }
+    this._pages = pages.map(page=>new BillPage(page));
     return this._pages;
+  }
+
+  findBillTextStartPage() {
+    let pageIndex = this._pages.findIndex(page => {
+      return page.region.whiteSpaces.length > 0;
+      page.region.regions;
+    });
+    return pageIndex + 1;
   }
 
   async dumpBillText() {
     let pages = await this.calculateLayout();
     return pages.reduce((texts,p)=>{
-      texts.push(p.getText()); 
+      texts.push(p.dumpText()); 
       return texts;
     }, []).join("\n----------------\n");
+  }
+
+  async dumpDocX() {
+    let pages = await this.calculateLayout();
+    let doc = new docx.Document();
+    pages.reduce((doc, page) => {
+      let billPage = new BillPage(page);
+      billPage.appendToDocX(doc);
+      return doc;
+    }, doc);
+    return doc;
   }
 }
 
@@ -51,15 +73,40 @@ class BillPage {
   }
 
   findBillText() {
-    // bill text is always numbered.
-    // The numbers will be in the left region.
-    if (Object.entries(this.region.regions).length > 0) {
+    let hasBillText = (region) => {
+      if (region.obstacles.length > 0) {
+        // bill text is always numbered.
+        // The numbers will be in the left region.
+        let left = region.regions.left; // has no obstacles, only has text regions that are numbers
+        let right = region.regions.right; // has text.
 
-    }
+        let noObstaclesOnLeft    = left.obstacles.length == 0;
+        let leftTextIsNumberList = left.items.every(i => i.getText().match(/^\d+$/)); // should this consider position
+        let rightHasText         = right.items.length > 0;
+        return noObstaclesOnLeft && leftTextIsNumberList && rightHasText;
+      } else { return false; }
+    };
+
+    let searchRegionsForBillText = (region) => {
+      if (hasBillText(region)) {
+        return region;
+      } else if (Object.values(region.regions).length > 0) {
+        return Object.values(region.regions).find(r => searchRegionsForBillText(r));
+      } else {
+        return false;
+      }
+    };
+
+    let regionWithBillText = searchRegionsForBillText(this.region);
+    return regionWithBillText;
   }
 
   dumpText(){
-    return this.region.dumpText();
+    return this.region.getText();
+  }
+
+  appendToDocX(doc){
+
   }
 }
 
