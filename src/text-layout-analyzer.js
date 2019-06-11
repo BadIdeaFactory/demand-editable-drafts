@@ -56,6 +56,13 @@ class TextLayoutAnalyzer {
     return canvasRegion;
   }
 
+  calculateLayout() {
+    this.calculateStyles();
+    this.findWhiteSpace();
+    this.groupRegions();
+    return this.region;
+  }
+
   // Cribbed from pdfjs utils
   matrix_transform(m1, m2) {
     return [

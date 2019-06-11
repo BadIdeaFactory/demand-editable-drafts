@@ -7,6 +7,7 @@ class BillDocument {
     this.scale             = (options.scale || 1);
     this.pageCount         = this.pdf.numPages;
     this.currentPageNumber = 1;
+    this._pages = [];
   }
 
   async init() {
@@ -20,7 +21,6 @@ class BillDocument {
   }
 
   async calculateLayout() {
-    let pageData = [];
     for (let pageNumber = 1; pageNumber <= this.pageCount ; pageNumber++) {
       let page = await this.getPage(pageNumber);
       let viewport = page.getViewport({scale:1});
@@ -28,14 +28,12 @@ class BillDocument {
       canvas.height = viewport.height;
       canvas.width  = viewport.width;
       let context = canvas.getContext('2d');
+
       let textItems = await page.getTextContent({normalizeWhiteSpace: true});
       let analyzer = new TextLayoutAnalyzer(textItems, viewport, context);
-      analyzer.calculateStyles();
-      analyzer.findWhiteSpace();
-      analyzer.groupRegions();
-      pageData.push(analyzer.region);
+      this._pages.push(analyzer.calculateLayout());
     }
-    return pageData;
+    return this._pages;
   }
 
   async dumpBillText() {
