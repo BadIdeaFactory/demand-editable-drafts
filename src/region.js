@@ -2,13 +2,15 @@ class Region {
   constructor(params, items=[], obstacles=[]) {
     let keys = Object.keys(params);
     let bounds;
-    if (['cssStyles', 'element'].every( key => keys.includes(key) )) {
+    if (keys.includes('cssStyles')) {
+      let style = params.cssStyles;
       bounds = {
-        top:     params.element.offsetTop,
-        bottom:  params.element.offsetTop + params.element.offsetHeight,
-        left:    params.element.offsetLeft,
-        right:   params.element.offsetLeft + params.element.offsetWidth*(params.cssStyles.scale||1),
+        top:    style.top,
+        bottom: style.top + style.fontHeight,
+        left:   style.left,
+        right:  style.left + style.width*(style.scale||1)
       };
+      this.item = params;
     } else if (['top', 'bottom', 'left', 'right'].every( key => keys.includes(key) )) {
       bounds = {
         top:    params.top,
@@ -228,12 +230,11 @@ class Region {
 
       let items = this.items.sort((a,b)=>b.height-a.height);
       let lines = items.reduce(groupByLine, []);
-      text = lines.map(line => {
-        let str = line.items.map(i => i.item.str).join(" ");
+      text = lines.sort(byTopLeft).map(line => {
+        let str = line.items.sort((a,b)=>a.left-b.left).map(i => i.item.str).join(" ");
         console.log(str);
         return str;
       }).join("\n");
-      //text = items.map(i => i.item.str).join(" ") + "\n";
     }
 
     return text;

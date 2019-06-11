@@ -3,7 +3,6 @@ import FileSaver from 'file-saver';
 import Region from './region';
 
 class TextLayoutAnalyzer {
-
   constructor(text, viewport, context) {
     this.styles   = text.styles;
     this.items    = text.items;
@@ -87,9 +86,7 @@ class TextLayoutAnalyzer {
     // 
     let angle = Math.atan2(tx[1], tx[0]);
     let style = styles[item.fontName];
-    if (style.vertical) {
-      angle += Math.PI / 2;
-    }
+    if (style.vertical) { angle += Math.PI / 2; }
     // i'm still not clear what tx[2] and tx[3] represent.
     let fontHeight = Math.sqrt((tx[2] * tx[2]) + (tx[3] * tx[3]));
     // assume the that the font's ascenders are equal to the font height.
