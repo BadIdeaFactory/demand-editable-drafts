@@ -490,7 +490,6 @@ class TextLayoutAnalyzer {
     // the items have defined offsetWidth, offsetHeight, offsetTop and offsetLeft
     let itemRegions = this.items.map(i => {let r = new Region(i); r.item = i; return r;});
     this.region.setItems(itemRegions);
-    console.log(this.region.items.length);
     this.regions = this.region.partitionByObstacles();
   }
 

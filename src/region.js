@@ -230,11 +230,9 @@ class Region {
 
       let items = this.items.sort((a,b)=>b.height-a.height);
       let lines = items.reduce(groupByLine, []);
-      text = lines.sort(byTopLeft).map(line => {
-        let str = line.items.sort((a,b)=>a.left-b.left).map(i => i.item.str).join(" ");
-        console.log(str);
-        return str;
-      }).join("\n");
+      text = lines.sort(byTopLeft).map(line => 
+        line.items.sort((a,b)=>a.left-b.left).map(i => i.item.str).join(" ")
+      ).join("\n");
     }
 
     return text;

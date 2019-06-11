@@ -27,7 +27,7 @@
   export let layoutAnalyzer;
   
   import TextLayoutAnalyzer from './text-layout-analyzer.js';
-  import BillLayoutAnalyzer from './bill-layout-analyzer.js';
+  import BillDocument from './bill-document.js';
   import docx from 'docx';
   import FileSaver from 'file-saver';
 
@@ -42,7 +42,7 @@
     External API for manipulating pages.
   */
 
-  async function getTextLayoutAnalyzer(){
+  export async function getTextLayoutAnalyzer(){
     let text = await getText();
     layoutAnalyzer = new TextLayoutAnalyzer(text, viewport, ctx);
     return layoutAnalyzer;
@@ -127,7 +127,7 @@
     viewport = page.getViewport({scale: scale});
     await renderPage(pageNum);
     let pageText = await drawTextBounds();
-    console.log(pageText.dumpText());
+    //console.log(pageText.dumpText());
   };
 
   export async function getText() {
@@ -226,6 +226,8 @@
 	onMount(async () => {
     await loadDocument(data);
     ctx = pageCanvas.getContext('2d');
+    billAnalyzer = new BillDocument(pdfDoc);
+    console.log(await billAnalyzer.dumpBillText());
     await getPage(pageNum);
   });
 
