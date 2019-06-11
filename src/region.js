@@ -95,6 +95,8 @@ class Region {
     return mostCentered;
   }
 
+  // This segments this region into (up to) four subregions which intersect
+  // with the obstacle along one axis.
   intersectingPartition(obstacle, keys=['top', 'bottom', 'left', 'right']) {
     if (!['top', 'bottom', 'left', 'right'].every(key => Object.keys(obstacle).includes(key))) {
       throw "obstacle must have `top`, `bottom`, `left` and `right` keys";
@@ -115,6 +117,8 @@ class Region {
     return regions;
   }
   
+  // This segments this region into (up to) four overlapping subregions which bound
+  // the obstacle.
   partition(obstacle, keys=['top', 'bottom', 'left', 'right']) {
     if (!['top', 'bottom', 'left', 'right'].every(key => Object.keys(obstacle).includes(key))) {
       throw "obstacle must have `top`, `bottom`, `left` and `right` keys";
@@ -135,8 +139,14 @@ class Region {
     return regions;
   }
 
+  // This recursively partitions this region into non-overlapping subregions
+  // divided by obstacles.
   partitionByObstacles() {
     if (this.obstacles.length > 0) {
+      // We're making the assumption that this document is read top-to-bottom
+      // so we're partitioning around each obstacle into a top region
+      // left and right of the obstacle, and then a region below the region
+      // none of which overlap.
       this.regions = {};
       [Object.entries(this.partition(this.obstacles[0], ['top', 'bottom'])), 
        Object.entries(this.intersectingPartition(this.obstacles[0], ['left', 'right']))
@@ -144,10 +154,10 @@ class Region {
     } else {
       this.regions = {};
     }
+    // ask each of the regions to partition themselves.
     Object.values(this.regions).forEach(region => region.partitionByObstacles());
     return this.regions;
   }
-
 
   equalBounds(region) {
     return (
