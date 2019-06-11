@@ -551,11 +551,6 @@ class TextLayoutAnalyzer {
     return this.groups;
   }
 
-  dumpText(){
-    this.groupRegions();
-    return this.region.getText();
-  }
-
   mungeLine(line){
     return line.replace(/‘‘/g, '“')
                .replace(/’’/g, '”')

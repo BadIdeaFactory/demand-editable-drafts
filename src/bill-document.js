@@ -46,8 +46,20 @@ class BillDocument {
 }
 
 class BillPage {
-  constructor(pdf, num){
+  constructor(region){
+    this.region = region;
+  }
 
+  findBillText() {
+    // bill text is always numbered.
+    // The numbers will be in the left region.
+    if (Object.entries(this.region.regions).length > 0) {
+
+    }
+  }
+
+  dumpText(){
+    return this.region.dumpText();
   }
 }
 
