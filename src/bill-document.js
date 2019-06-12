@@ -65,7 +65,9 @@ class BillPage {
     this.region = region;
   }
 
-  getBillText() {
+  // this should really just be a tree walk with decorators
+  // which specify how to process the region in question.
+  getBillTextParent() {
     let hasBillText = (region) => {
       if (region.obstacles.length > 0) {
         // bill text is always numbered.
@@ -94,12 +96,12 @@ class BillPage {
     return regionWithBillText;
   }
 
-  getText(full=false){
+  getText(options={}){
     let text;
-    if (full) {
+    if (options.fullText) {
       text = this.region.getText();
     } else {
-      let billTextParent = this.getBillText();
+      let billTextParent = this.getBillTextParent();
       if (billTextParent) {
         text = billTextParent.regions.right.getText();
       } else {
