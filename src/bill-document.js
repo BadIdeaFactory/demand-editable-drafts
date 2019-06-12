@@ -51,7 +51,10 @@ class BillDocument {
   // notes about docx format.
   //   - all measurements in OpenOfficeXML is in TWIPs (twentieth of a point)
   dumpDocX() {
-    let doc = new docx.Document();
+    let doc = new docx.Document(undefined,{
+      lineNumberCountBy: 1,
+      lineNumberRestart: docx.LineNumberRestartFormat.NEW_PAGE,
+    });
     this._pages.reduce((doc, page, index) => {
       let opts = {};
       if (index == this._pages.length-1) { opts.noPageBreak = true; }
@@ -176,7 +179,7 @@ class BillPage {
     let lineNumbers    = billTextParent.regions.left;
     let marginLeft     = lineNumbers.right;
     
-    let graf = new docx.Paragraph(billTextRegion.getText());
+    let graf = new docx.Paragraph(this.getText());
     graf.spacing({
       line: 240*2, // line spacing is done in 1/240ths of a line.
     });
