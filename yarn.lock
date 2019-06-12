@@ -427,10 +427,10 @@ detect-libc@^1.0.2:
   resolved "https://registry.yarnpkg.com/detect-libc/-/detect-libc-1.0.3.tgz#fa137c4bd698edf55cd5cd02ac559f91a4c4ba9b"
   integrity sha1-+hN8S9aY7fVc1c0CrFWfkaTEups=
 
-docx@5.0.0-rc2:
-  version "5.0.0-rc2"
-  resolved "https://registry.yarnpkg.com/docx/-/docx-5.0.0-rc2.tgz#25a1f13bb775d4751dc683d4b92b6dac0248324f"
-  integrity sha512-cEW5f9+HOaSEGgJqjobgIlJ10+2TfinjLGg0y9jGG0HD9aStdk0+qUrEHEgEOkRNiIJf/RmQFx/UyuUj3PO0iw==
+docx@^5.0.0-rc3:
+  version "5.0.0-rc3"
+  resolved "https://registry.yarnpkg.com/docx/-/docx-5.0.0-rc3.tgz#c04a9f0372605bd363a6070593b9b2fab8f49403"
+  integrity sha512-yA+UOtlRLu6uoS+Ze/8XAepupuNPFaYfwRrmS/c+foFIZZRDZgXW5XMZM8GFlZRZ1BdWQorInMK8Vfh0Z87gYw==
   dependencies:
     "@types/jszip" "^3.1.4"
     jszip "^3.1.5"
