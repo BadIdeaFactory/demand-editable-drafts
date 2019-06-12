@@ -67,6 +67,20 @@ class BillPage {
     this.region = region;
   }
 
+  // this is an example of doing the most basic dump
+  // of all of the regions as regions.
+  linearizeRegions() {
+    let regions = [];
+    let linearize = (region) => {
+      if (Object.values(region.regions) == 0) {
+        return region;
+      } else {
+        return Object.values(region.regions).map(r => linearize(r));
+      }
+    };
+    return linearize(this.region);
+  }
+
   // this should really just be a tree walk with decorators
   // which specify how to process the region in question.
   getBillTextParent() {
@@ -84,11 +98,14 @@ class BillPage {
       } else { return false; }
     };
 
-    let searchRegionsForBillText = (region) => {
+    let searchRegionsForBillText = (region, path=[]) => {
       if (hasBillText(region)) {
+        region.path = path;
         return region;
       } else if (Object.values(region.regions).length > 0) {
-        return Object.values(region.regions).find(r => searchRegionsForBillText(r));
+        let regions = Object.entries(region.regions);
+        let entry = regions.find(([key, r]) => searchRegionsForBillText(r, [...path, key]));
+        return entry[1];
       } else {
         return false;
       }
@@ -105,12 +122,52 @@ class BillPage {
     } else {
       let billTextParent = this.getBillTextParent();
       if (billTextParent) {
-        text = billTextParent.regions.right.getText();
+        const collectText = (region, path=[]) => {
+          let regionTexts = [];
+          if (path.length > 0) {
+            // if there are still path elements, we still have to traverse
+            // the rest of the regions that precede the billTextParent.
+
+            // so get the next region key.
+            const searchKey = path.shift();
+            // this is the list of all of the region keys.
+            const readingOrder = ['top', 'left', 'right', 'bottom'];
+            // just slice off the regions which precede the billTextParent
+            // NOTE THIS POTENTIALLY IGNORES A BUNCH OF REGIONS.
+            const stoppingPoint = readingOrder.indexOf(searchKey);
+            const precedingKeys = readingOrder.splice(0, stoppingPoint);
+            // get all the text from the preceding regions.
+            precedingKeys.forEach(key => regionTexts.push(region.regions[key].getText()));
+            // continue collecting text preceding the billTextParent,
+            // and then the billTextParent's text itself (which is our basecase)
+            const foo = collectText(region.regions[searchKey], path);
+            regionTexts.push(foo);
+            // if we wanted to grab the remaining text regions
+            // we'd do something like this:
+            //    let remainingKeys = readingOrder.splice(stoppingPoint+1)
+            //    remainingKeys.forEach(key => regionTexts.push(region.regions[key].getText()));
+            // but i'm not going to test that right now.
+          } else {
+            // this is the billTextParent
+            // so push the top region.
+            regionTexts.push(region.regions.top.getText());
+            regionTexts.push(region.regions.right.getText());
+          }
+          return regionTexts;
+        };
+
+        let path = billTextParent.path;
+        //text = billTextParent.regions.right.getText();
+        if (billTextParent === this.region) {
+          text = this.region.regions.right.getText();
+        } else {
+          text = collectText(this.region, path);
+        }
       } else {
         text =  this.region.getText();
       }
     }
-    return text;
+    return [text].flat().join("\n");
   }
 
   appendToDocX(doc, options={}){
