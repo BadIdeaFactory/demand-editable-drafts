@@ -47,7 +47,9 @@ class BillDocument {
       return texts;
     }, []).join("\n----------------\n");
   }
-
+  
+  // notes about docx format.
+  //   - all measurements in OpenOfficeXML is in TWIPs (twentieth of a point)
   dumpDocX() {
     let doc = new docx.Document();
     this._pages.reduce((doc, page, index) => {
@@ -118,6 +120,9 @@ class BillPage {
     let marginLeft     = lineNumbers.right;
     
     let graf = new docx.Paragraph(billTextRegion.getText());
+    graf.spacing({
+      line: 240*2, // line spacing is done in 1/240ths of a line.
+    });
     if (!options.noPageBreak){ graf.pageBreak(); }
     doc.addParagraph(graf);
   }
