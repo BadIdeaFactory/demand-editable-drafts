@@ -48,12 +48,12 @@ class BillDocument {
     }, []).join("\n----------------\n");
   }
 
-  async dumpDocX() {
-    let pages = await this.calculateLayout();
+  dumpDocX() {
     let doc = new docx.Document();
-    pages.reduce((doc, page) => {
-      let billPage = new BillPage(page);
-      billPage.appendToDocX(doc);
+    this._pages.reduce((doc, page, index) => {
+      let opts = {};
+      if (index == this._pages.length-1) { opts.noPageBreak = true; }
+      page.appendToDocX(doc, opts);
       return doc;
     }, doc);
     return doc;
@@ -111,8 +111,15 @@ class BillPage {
     return text;
   }
 
-  appendToDocX(doc){
-
+  appendToDocX(doc, options={}){
+    let billTextParent = this.getBillTextParent();
+    let billTextRegion = billTextParent.regions.right;
+    let lineNumbers    = billTextParent.regions.left;
+    let marginLeft     = lineNumbers.right;
+    
+    let graf = new docx.Paragraph(billTextRegion.getText());
+    if (!options.noPageBreak){ graf.pageBreak(); }
+    doc.addParagraph(graf);
   }
 }
 

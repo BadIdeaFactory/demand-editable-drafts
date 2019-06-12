@@ -49,17 +49,7 @@
   }
 
   export async function dumpDocX() {
-    let doc = new docx.Document();
-
-    for (let num = 1; num <= pdfDoc.numPages ; num++) {
-      await getPage(num);
-      let layoutAnalyzer = await getTextLayoutAnalyzer();
-      layoutAnalyzer.calculateStyles();
-      let options = {};
-      if (num == 1) { options.noPageBreak = true; }
-      layoutAnalyzer.appendTextToDocX(doc, options);
-    }
-
+    let doc = billAnalyzer.dumpDocX();
     let packer = new docx.Packer();
     let docBuffer = await packer.toBuffer(doc);
     let blob = new Blob(
