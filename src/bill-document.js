@@ -21,36 +21,29 @@ class BillDocument {
     } else { throw "pageNumber must be within the range of 1 to pageCount."; }
   }
 
-  async calculateLayout() {
-    let pages = [];
-    for (let pageNumber = 1; pageNumber <= this.pageCount ; pageNumber++) {
-      let page = await this.getPage(pageNumber);
-      let viewport = page.getViewport({scale:1});
-      let canvas = document.createElement('canvas');
-      canvas.height = viewport.height;
-      canvas.width  = viewport.width;
-      let context = canvas.getContext('2d');
-
-      let textItems = await page.getTextContent({normalizeWhiteSpace: true});
-      let analyzer = new TextLayoutAnalyzer(textItems, viewport, context);
-      pages.push(analyzer.calculateLayout());
+  async calculateLayout(options={}) {
+    if (options.force || this._pages.length == 0) {
+      let pages = [];
+      for (let pageNumber = 1; pageNumber <= this.pageCount ; pageNumber++) {
+        let page = await this.getPage(pageNumber);
+        let viewport = page.getViewport({scale:1});
+        let canvas = document.createElement('canvas');
+        canvas.height = viewport.height;
+        canvas.width  = viewport.width;
+        let context = canvas.getContext('2d');
+  
+        let textItems = await page.getTextContent({normalizeWhiteSpace: true});
+        let analyzer = new TextLayoutAnalyzer(textItems, viewport, context);
+        pages.push(analyzer.calculateLayout());
+      }
+      this._pages = pages.map(page=>new BillPage(page));
     }
-    this._pages = pages.map(page=>new BillPage(page));
     return this._pages;
   }
 
-  findBillTextStartPage() {
-    let pageIndex = this._pages.findIndex(page => {
-      return page.region.whiteSpaces.length > 0;
-      page.region.regions;
-    });
-    return pageIndex + 1;
-  }
-
-  async dumpBillText() {
-    let pages = await this.calculateLayout();
-    return pages.reduce((texts,p)=>{
-      texts.push(p.dumpText()); 
+  getBillText(options={}) {
+    return this._pages.reduce((texts,p)=>{
+      texts.push(p.getText(options)); 
       return texts;
     }, []).join("\n----------------\n");
   }
@@ -72,7 +65,7 @@ class BillPage {
     this.region = region;
   }
 
-  findBillText() {
+  getBillText() {
     let hasBillText = (region) => {
       if (region.obstacles.length > 0) {
         // bill text is always numbered.
@@ -101,8 +94,19 @@ class BillPage {
     return regionWithBillText;
   }
 
-  dumpText(){
-    return this.region.getText();
+  getText(full=false){
+    let text;
+    if (full) {
+      text = this.region.getText();
+    } else {
+      let billTextParent = this.getBillText();
+      if (billTextParent) {
+        text = billTextParent.regions.right.getText();
+      } else {
+        text =  this.region.getText();
+      }
+    }
+    return text;
   }
 
   appendToDocX(doc){

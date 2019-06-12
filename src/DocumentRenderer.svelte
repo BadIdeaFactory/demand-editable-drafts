@@ -227,7 +227,8 @@
     await loadDocument(data);
     ctx = pageCanvas.getContext('2d');
     billAnalyzer = new BillDocument(pdfDoc);
-    console.log(await billAnalyzer.dumpBillText());
+    await billAnalyzer.calculateLayout();
+    console.log(billAnalyzer.getBillText());
     await getPage(pageNum);
   });
 
