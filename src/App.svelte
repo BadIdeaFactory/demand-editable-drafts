@@ -25,7 +25,7 @@
 	<header>
 		<FilePicker accept={"application/pdf"} bind:this={picker} />
 		{#if $documentStore.contents }
-			<FileCard file={$documentStore} />
+			<!--<FileCard file={$documentStore} />-->
 			<!--<button on:click|preventDefault={ocr}>OCR page</button>-->
 		{/if}
 	</header>
