@@ -219,35 +219,30 @@ class TextLayoutAnalyzer {
 
   sort() { return this.items.sort(this._sorters["orderItemsByTopLeft"]); }
 
-  mergeSmallCaps(items) {
-    let regions = items.map((item) => {let region = new Region(item); region.item = item; return region; });
+  mergeSmallCaps(regionItems){
     // if regions are adjacent and share a font, and are smallcaps, merge them into a single region.
 
     // share a y position and are w/in some boundary of adjacency
     
     // get all of the strings that are all caps.
-    let allCaps = regions.filter((region)=>{
+    let allCaps = regionItems.filter((region)=>{
       return region.item.str.match(/^([A-Z]|\W)*[A-Z]([A-Z]|\W)*$/);
     });
 
-    // next we find the elements that are adjacent to them
-    let capsLines = allCaps.map((caps)=>{
+    let merge = (caps) => {
       let capsSpaceWidth = this.styles[caps.item.fontName].spaceWidth;
       let sameLine = (a, b) => {
         let extendedToBorder = new Region({ 
-          top: a.top, 
-          bottom: a.bottom, 
-          left: 0, 
-          right: this.context.canvas.width
+          top: a.top, bottom: a.bottom, 
+          left: 0, right: this.context.canvas.width
         });
         return extendedToBorder.intersects(b);
       };
-      let capsLineRegions = regions.filter((region) => {
-        return (
-          region.item.fontName == caps.item.fontName &&
-          sameLine(caps, region)
-        );
+
+      let capsLineRegions = regionItems.filter((region) => {
+        return ( region.item.fontName == caps.item.fontName && sameLine(caps, region));
       });
+
       let capsLineBoundaries = capsLineRegions.reduce((lineBounds, region) => {
         return {
           top    : (lineBounds.top)    ? Math.min(lineBounds.top, region.top)       : region.top,
@@ -256,14 +251,23 @@ class TextLayoutAnalyzer {
           right  : (lineBounds.right)  ? Math.max(lineBounds.right, region.right)   : region.right,
         };
       }, {});
-      let capsLine = new Region(capsLineBoundaries, items);
+      let capsLine = new Region(capsLineBoundaries, capsLineRegions);
+      capsLine.hasSmallCaps = true;
       if (!capsLineRegions.every(region=>capsLine.contains(region))) { debugger; }
       capsLine.drawOnto(this.context);
       return capsLine;
-    });
+    };
 
-    let capsItems = capsLines.reduce((list, line) => list.concat(line.items), []);
-    let result = capsLines.concat(regions.filter(region => !capsItems.includes(region.item)));
+    // next we find the elements that are adjacent to them
+    let capsLines = allCaps.map(merge);
+    let countedItems = capsLines.map(line => line.items.map(r=>r.item)).flat();
+    let unaccountedItems = regionItems.map(r=>r.item).filter(i => !countedItems.includes(i));
+    let resultItems = [...countedItems,...unaccountedItems];
+    let allItems = regionItems.map(r => r.item);
+    const identical = (arr1, arr2) => arr1.every(i=>arr2.includes(i)) && arr2.every(i=>arr1.includes(i));
+    if (!(identical(allItems,resultItems) && identical(allItems, this.items))) { debugger; }
+    let unaccountedItemRegions = regionItems.filter( r => unaccountedItems.includes(r.item));
+    let result = [...capsLines, ...unaccountedItemRegions];
     return result.sort(this._sorters.orderByTopLeft);
   }
 
@@ -310,16 +314,20 @@ class TextLayoutAnalyzer {
     to try and find the tallest whiteSpaces.
     */
 
-    let items = this.sort();
-    let mergedItems = this.mergeSmallCaps(items);
+    let items = this.sort().map(item=>{
+      let region = new Region(item); 
+      region.item = item; 
+      return region;
+    });
+    let elements = this.mergeSmallCaps(items);
 
     // turn all of the items into bounding boxes
     // defined by their css measured dimensions.
-    let elements = mergedItems.map((item) => new Region(item));
 
     // We're using the canvas as the initial bounding box.
     let canvasBounds = new Region({ top: 0, bottom: this.context.canvas.height,
                                     left: 0, right: this.context.canvas.width,}, elements);
+    //console.log(items.length, elements.length, canvasBounds.items.length);
 
     let queue = [canvasBounds];
     let whiteSpaces = [];
@@ -350,8 +358,6 @@ class TextLayoutAnalyzer {
           let subregions = canvasBounds.intersectingPartition(region, ['left','right']);
           region.leftPartition = subregions.left;
           region.rightPartition = subregions.right;
-          // we should memoize these results somewhere.
-          let itemsOverlap = (a, b) => !(a.bottom < b.top || a.top > b.bottom);
 
           let compactRegion = (region) => {
             let leftItems  = subregions.left.items;
@@ -359,7 +365,8 @@ class TextLayoutAnalyzer {
             let intersections = [];
             leftItems.forEach( l => {
               rightItems.forEach(r => {
-                if (itemsOverlap(l,r)) { intersections.push([l,r]); }
+                // we should memoize these the overlap results somewhere.
+                if (l.overlapsVertically(r)) { intersections.push([l,r]); }
               });
             });
             let highestIntersection = 0;
@@ -379,7 +386,7 @@ class TextLayoutAnalyzer {
             }, reg.items, reg.obstacles));
           };
 
-          let fontCount = items.reduce((fonts, item) => {
+          let fontCount = region.items.reduce((fonts, item) => {
             fonts[item.fontName] = ((fonts[item.fontName] || 0) + 1);
             return fonts;
           }, {});

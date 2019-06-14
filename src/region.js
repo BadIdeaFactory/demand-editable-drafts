@@ -196,6 +196,10 @@ class Region {
     return result;
   }
 
+  overlapsVertically(candidate){ 
+    return !(this.bottom < candidate.top || this.top > candidate.bottom);
+  }
+
   drawOnto(context, style={}){
     context.strokeStyle = (style.color || "blue");
     context.setLineDash([6]);
