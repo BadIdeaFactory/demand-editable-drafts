@@ -41,11 +41,88 @@ class BillDocument {
     return this._pages;
   }
 
+  derp() {
+    const isBillTextParent = (region) => {
+      if (region.obstacles.length > 0) {
+        // bill text is always numbered.
+        // The numbers will be in the left region.
+        let left  = region.regions.left; // has no obstacles, only has text regions that are numbers
+        let right = region.regions.right; // has text.
+
+        let noObstaclesOnLeft    = left.obstacles.length == 0;
+        let leftTextIsNumberList = left.items.every(i => i.getText().match(/^\d+$/)); // should this consider position
+        let rightHasText         = right.items.length > 0;
+        return noObstaclesOnLeft && leftTextIsNumberList && rightHasText;
+      } else { 
+        return false; 
+      }
+    };
+    const calculateBillTextMargins = (region) => {
+      const lineNumberRegion      = region.regions.left;
+      const billTextRegion        = region.regions.right;
+      const rightEdgeOfLeftMargin = lineNumberRegion.right;
+      const billTextLeftEdge      = billTextRegion.left;
+      return billTextLeftEdge - rightEdgeOfLeftMargin;
+    };
+
+    const walk = (region, path=[]) => {
+      const childRegions = region.regions;
+      const orderedKeys = ['top', 'left', 'right', 'bottom'];
+      if (isBillTextParent(region)) {
+        walk(childRegions.top, [...path, 'top']);
+        state.currentPage.main.path = path;
+        state.currentPage.main.regions.push(region);
+        state.currentPage.main.margin = calculateBillTextMargins(region);
+        state.currentPage.main.text.push(childRegions.right.getText());
+        state.mainMargins.push(state.currentPage.mainMargin);
+        //walk(childRegions.bottom, [...path, 'bottom']);
+      } else if (Object.entries(childRegions).length > 0) {
+        orderedKeys.map(key =>{ walk(childRegions[key], [...path, key]); });
+      } else {
+        if (state.currentPage.billTextParentPath) {
+          state.currentPage.after.text.push(region.getText());
+          state.currentPage.after.regions.push(region);
+        } else {
+          state.currentPage.before.text.push(region.getText());
+          state.currentPage.before.regions.push(region);
+        }
+      }
+    };
+
+    let state = { mainMargins:[], pages: [] };
+    this._pages.forEach(page =>{
+      let currentPage = {
+        before: {regions:[], text:[]},
+        main:   {regions:[], text:[]},
+        after:  {regions:[], text:[]},
+      };
+      state.currentPage = currentPage;
+      walk(page.region);
+      state.pages.push(currentPage);
+    });
+    delete state.currentPage;
+    return state;
+  }
+
   getBillText(options={}) {
-    return this._pages.reduce((texts,p)=>{
-      texts.push(p.getText(options)); 
-      return texts;
-    }, []).join("\n----------------\n");
+    //return this._pages.reduce((texts,p)=>{
+    //  texts.push(p.getText(options)); 
+    //  return texts;
+    //}, []).join("\n----------------\n");
+    let processed = this.derp();
+    let haveSeenAMain;
+    return processed.pages.map(page => {
+      let result;
+      if (haveSeenAMain) {
+        result = [page.main.text].flat();
+      } else if (page.before.regions.length > 0 && page.main.regions.length > 0) {
+        result = [page.before.text, page.main.text].flat();
+        haveSeenAMain = true;
+      } else {
+        result = [page.before.text].flat();
+      }
+      return result.join("\n");
+    }).join("\n-----------------\n");
   }
   
   // notes about docx format.
@@ -86,7 +163,7 @@ class BillPage {
 
   // this should really just be a tree walk with decorators
   // which specify how to process the region in question.
-  getBillTextParent() {
+  /* _getBillTextParent() {
     let hasBillText = (region) => {
       if (region.obstacles.length > 0) {
         // bill text is always numbered.
@@ -118,7 +195,7 @@ class BillPage {
     return regionWithBillText;
   }
 
-  getText(options={}){
+  _getText(options={}){
     let text;
     if (options.fullText) {
       text = this.region.getText();
@@ -147,8 +224,8 @@ class BillPage {
             regionTexts.push(foo);
             // if we wanted to grab the remaining text regions
             // we'd do something like this:
-            //    let remainingKeys = readingOrder.splice(stoppingPoint+1)
-            //    remainingKeys.forEach(key => regionTexts.push(region.regions[key].getText()));
+            let remainingKeys = readingOrder.splice(stoppingPoint+1);
+            remainingKeys.forEach(key => regionTexts.push(region.regions[key].getText()));
             // but i'm not going to test that right now.
           } else {
             // this is the billTextParent
@@ -171,7 +248,7 @@ class BillPage {
       }
     }
     return [text].flat().join("\n");
-  }
+  } */
 
   appendToDocX(doc, options={}){
     let billTextParent = this.getBillTextParent();

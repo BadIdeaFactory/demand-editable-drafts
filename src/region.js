@@ -202,6 +202,24 @@ class Region {
     context.strokeRect(this.left, this.top, this.width, this.height);
   }
 
+  walk(fn, options={}) {
+    if (!fn) { return; }
+    const defaultWalker = (region, processor) => {
+      const results = [];
+      if (Object.keys(region.regions).length > 0) {
+        const orderedKeys = ['top', 'left', 'right', 'bottom'];
+        const regions = orderedKeys.map(key=>region.regions[key]);
+        regions.forEach((r) => results.push(defaultWalker(r,processor)));
+      } else {
+        results.push(processor(region));
+      }
+      return results;
+    };
+
+    let walker = (options.customWalker ? options.customWalker : defaultWalker);
+    return walker(this, fn);
+  }
+
   getText() {
     let byTopLeft = (a, b) => {
       // if the y coordinates are the same
