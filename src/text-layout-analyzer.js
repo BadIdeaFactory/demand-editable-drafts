@@ -558,12 +558,6 @@ class TextLayoutAnalyzer {
     return this.groups;
   }
 
-  mungeLine(line){
-    return line.replace(/‘‘/g, '“')
-               .replace(/’’/g, '”')
-               .replace(/\s+/, ' ');
-  }
-
   async dumpDocX() {
     let doc = new docx.Document();
     let paragraph = new docx.Paragraph(this.dumpText());

@@ -41,7 +41,7 @@ class BillDocument {
     return this._pages;
   }
 
-  derp() {
+  process() {
     const isBillTextParent = (region) => {
       if (region.obstacles.length > 0) {
         // bill text is always numbered.
@@ -74,7 +74,7 @@ class BillDocument {
         state.currentPage.main.regions.push(region);
         state.currentPage.main.margin = calculateBillTextMargins(region);
         state.currentPage.main.text.push(childRegions.right.getText());
-        state.mainMargins.push(state.currentPage.mainMargin);
+        state.mainMargins.push(state.currentPage.main.margin);
         //walk(childRegions.bottom, [...path, 'bottom']);
       } else if (Object.entries(childRegions).length > 0) {
         orderedKeys.map(key =>{ walk(childRegions[key], [...path, key]); });
@@ -91,16 +91,14 @@ class BillDocument {
 
     let state = { mainMargins:[], pages: [] };
     this._pages.forEach(page =>{
-      let currentPage = {
-        before: {regions:[], text:[]},
-        main:   {regions:[], text:[]},
-        after:  {regions:[], text:[]},
-      };
-      state.currentPage = currentPage;
+      page.initializeSections();
+      state.currentPage = page;
       walk(page.region);
-      state.pages.push(currentPage);
+      state.pages.push(page);
     });
     delete state.currentPage;
+
+    state.smallestMargin = state.mainMargins.sort((a,b)=>a-b)[0];
     return state;
   }
 
@@ -109,7 +107,7 @@ class BillDocument {
     //  texts.push(p.getText(options)); 
     //  return texts;
     //}, []).join("\n----------------\n");
-    let processed = this.derp();
+    let processed = this.process();
     let haveSeenAMain;
     return processed.pages.map(page => {
       let result;
@@ -145,6 +143,14 @@ class BillDocument {
 class BillPage {
   constructor(region){
     this.region = region;
+    this.initializeSections();
+  }
+
+  initializeSections(){
+    this.main   = {regions: [], text: []};
+    this.before = {regions: [], text: []};
+    this.after  = {regions: [], text: []};
+    return this;
   }
 
   // this is an example of doing the most basic dump
@@ -161,94 +167,16 @@ class BillPage {
     return linearize(this.region);
   }
 
-  // this should really just be a tree walk with decorators
-  // which specify how to process the region in question.
-  /* _getBillTextParent() {
-    let hasBillText = (region) => {
-      if (region.obstacles.length > 0) {
-        // bill text is always numbered.
-        // The numbers will be in the left region.
-        let left = region.regions.left; // has no obstacles, only has text regions that are numbers
-        let right = region.regions.right; // has text.
-
-        let noObstaclesOnLeft    = left.obstacles.length == 0;
-        let leftTextIsNumberList = left.items.every(i => i.getText().match(/^\d+$/)); // should this consider position
-        let rightHasText         = right.items.length > 0;
-        return noObstaclesOnLeft && leftTextIsNumberList && rightHasText;
-      } else { return false; }
-    };
-
-    let searchRegionsForBillText = (region, path=[]) => {
-      if (hasBillText(region)) {
-        region.path = path;
-        return region;
-      } else if (Object.values(region.regions).length > 0) {
-        let regions = Object.entries(region.regions);
-        let entry = regions.find(([key, r]) => searchRegionsForBillText(r, [...path, key]));
-        return entry[1];
-      } else {
-        return false;
-      }
-    };
-
-    let regionWithBillText = searchRegionsForBillText(this.region);
-    return regionWithBillText;
+  mungeLine(line){
+    let mungers = [
+      (l) => l.replace(/‘‘/g, '“'),
+      (l) => l.replace(/’’/g, '”'),
+      (l) => l.replace(/\s+/, ' '),
+      (l) => l.replace(/\bll+\b/g, "＿"),
+    ];
+    return mungers.reduce((l, munger) => munger(l), line);
   }
 
-  _getText(options={}){
-    let text;
-    if (options.fullText) {
-      text = this.region.getText();
-    } else {
-      let billTextParent = this.getBillTextParent();
-      if (billTextParent) {
-        const collectText = (region, path=[]) => {
-          let regionTexts = [];
-          if (path.length > 0) {
-            // if there are still path elements, we still have to traverse
-            // the rest of the regions that precede the billTextParent.
-
-            // so get the next region key.
-            const searchKey = path.shift();
-            // this is the list of all of the region keys.
-            const readingOrder = ['top', 'left', 'right', 'bottom'];
-            // just slice off the regions which precede the billTextParent
-            // NOTE THIS POTENTIALLY IGNORES A BUNCH OF REGIONS.
-            const stoppingPoint = readingOrder.indexOf(searchKey);
-            const precedingKeys = readingOrder.splice(0, stoppingPoint);
-            // get all the text from the preceding regions.
-            precedingKeys.forEach(key => regionTexts.push(region.regions[key].getText()));
-            // continue collecting text preceding the billTextParent,
-            // and then the billTextParent's text itself (which is our basecase)
-            const foo = collectText(region.regions[searchKey], path);
-            regionTexts.push(foo);
-            // if we wanted to grab the remaining text regions
-            // we'd do something like this:
-            let remainingKeys = readingOrder.splice(stoppingPoint+1);
-            remainingKeys.forEach(key => regionTexts.push(region.regions[key].getText()));
-            // but i'm not going to test that right now.
-          } else {
-            // this is the billTextParent
-            // so push the top region.
-            regionTexts.push(region.regions.top.getText());
-            regionTexts.push(region.regions.right.getText());
-          }
-          return regionTexts;
-        };
-
-        let path = billTextParent.path;
-        //text = billTextParent.regions.right.getText();
-        if (billTextParent === this.region) {
-          text = this.region.regions.right.getText();
-        } else {
-          text = collectText(this.region, path);
-        }
-      } else {
-        text =  this.region.getText();
-      }
-    }
-    return [text].flat().join("\n");
-  } */
 
   appendToDocX(doc, options={}){
     let billTextParent = this.getBillTextParent();
