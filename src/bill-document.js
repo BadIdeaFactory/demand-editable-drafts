@@ -69,10 +69,11 @@ class BillDocument {
         (l) => l.replace(/‘‘/g, '“'),
         (l) => l.replace(/’’/g, '”'),
         (l) => l.replace(/\s+/, ' '),
-        (l) => l.replace(/\bll+\b/g, "＿"),
+        (l) => l.replace(/\bll+\b/g, '＿'),
       ];
       const lineText = lineRegion.items.sort((a,b)=>a.left-b.left).map( r => r.item.str ).join(' ');
-      return mungers.reduce((l, munger) => munger(l), lineText);
+      let resultText = mungers.reduce((l, munger) => munger(l), lineText);
+      return resultText;
     };
 
     const walk = (region, path=[]) => {
@@ -91,10 +92,10 @@ class BillDocument {
         orderedKeys.map(key =>{ walk(childRegions[key], [...path, key]); });
       } else {
         if (state.currentPage.billTextParentPath) {
-          state.currentPage.after.text.push(region.getText());
+          state.currentPage.after.text.push(region.getText({line:mungeLine}));
           state.currentPage.after.regions.push(region);
         } else {
-          state.currentPage.before.text.push(region.getText());
+          state.currentPage.before.text.push(region.getText({line:mungeLine}));
           state.currentPage.before.regions.push(region);
         }
       }
