@@ -64,6 +64,16 @@ class BillDocument {
       const billTextLeftEdge      = billTextRegion.left;
       return billTextLeftEdge - rightEdgeOfLeftMargin;
     };
+    const mungeLine = (lineRegion) => {
+      let mungers = [
+        (l) => l.replace(/‘‘/g, '“'),
+        (l) => l.replace(/’’/g, '”'),
+        (l) => l.replace(/\s+/, ' '),
+        (l) => l.replace(/\bll+\b/g, "＿"),
+      ];
+      const lineText = lineRegion.items.sort((a,b)=>a.left-b.left).map( r => r.item.str ).join(' ');
+      return mungers.reduce((l, munger) => munger(l), lineText);
+    };
 
     const walk = (region, path=[]) => {
       const childRegions = region.regions;
@@ -74,7 +84,7 @@ class BillDocument {
         state.currentPage.main.regions.push(region);
         state.currentPage.main.margin = calculateBillTextMargins(region);
         childRegions.right.regions = {}; // disregard partitions inside of main region.
-        state.currentPage.main.text.push(childRegions.right.getText());
+        state.currentPage.main.text.push(childRegions.right.getText({line:mungeLine}));
         state.mainMargins.push(state.currentPage.main.margin);
         //walk(childRegions.bottom, [...path, 'bottom']);
       } else if (Object.entries(childRegions).length > 0) {
@@ -104,17 +114,23 @@ class BillDocument {
   }
 
   getBillText(options={}) {
-    //return this._pages.reduce((texts,p)=>{
-    //  texts.push(p.getText(options)); 
-    //  return texts;
-    //}, []).join("\n----------------\n");
+    // walk the region tree and process it.
     let processed = this.process();
+
+    // now we'll walk the processed pages results.
+    // Each bill has a header (this isn't the page header), 
+    // so we'll print all of the text up until we find a region
+    // with main bill text.  After that point we know we're in
+    // bill text mode.
     let haveSeenAMain;
     return processed.pages.map(page => {
       let result;
       if (haveSeenAMain) {
+        // If we're in the main section just dump the text for the main of each page.
         result = [page.main.text].flat();
       } else if (page.before.regions.length > 0 && page.main.regions.length > 0) {
+        // We're still in the header, but as soon as we encounter a Main region
+        // then it's time to flip the switch.
         result = [page.before.text, page.main.text].flat();
         haveSeenAMain = true;
       } else {

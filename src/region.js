@@ -263,16 +263,20 @@ class Region {
     return lines.sort(orderByTopLeft);
   }
 
-  getText() {
+  getText(options={}) {
+    const defaultJoinLine = (line)=> {
+      return line.items.sort((a,b)=>a.left-b.left).map( r => r.item.str ).join(' ');
+    };
+    let processLine = defaultJoinLine;
+    if (options.line) { processLine = options.line; }
+
     let text;
     if (this.item) {
       text = this.item.str;
     } else {
       let textLines = this.walk((region) => {
         let lines = region.groupItems(); 
-        return lines.map( line => {
-          return line.items.sort((a,b)=>a.left-b.left).map( r => r.item.str ).join(' ');
-        }).join("\n");
+        return lines.map( line => processLine(line)).join("\n");
       });
       text = textLines.join("\n");
     }
