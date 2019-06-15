@@ -216,10 +216,10 @@
 	onMount(async () => {
     await loadDocument(data);
     ctx = pageCanvas.getContext('2d');
+    await getPage(pageNum);
     billAnalyzer = new BillDocument(pdfDoc);
     await billAnalyzer.calculateLayout();
     console.log(billAnalyzer.getBillText());
-    await getPage(pageNum);
   });
 
   onDestroy(() => { unloadDocument(); });
