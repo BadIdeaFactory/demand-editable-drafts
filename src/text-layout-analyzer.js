@@ -56,10 +56,14 @@ class TextLayoutAnalyzer {
     return canvasRegion;
   }
 
-  calculateLayout() {
-    this.calculateStyles();
-    this.findWhiteSpace();
-    this.groupRegions();
+  calculateLayout(options={}) {
+    if (!this.calculatedLayout || options.force){
+      this.calculateStyles();
+      this.mergeSmallCaps();
+      this.findWhiteSpace();
+      this.groupRegions();
+      this.calculatedLayout = true;
+    }
     return this.region;
   }
 
@@ -211,18 +215,22 @@ class TextLayoutAnalyzer {
   }
 
   appendTextElementsTo(textLayer) {
-    this.groupTextIntoLines();
-    this.groups.forEach((group) => {
-      group.items.forEach((item) => textLayer.appendChild(item.element));
+    this.calculateLayout();
+    this.region.walk((region) => {
+      region.items.forEach(itemRegion => {
+        textLayer.appendChild(itemRegion.item.element);
+      });
     });
   }
 
   sort() { return this.items.sort(this._sorters["orderItemsByTopLeft"]); }
 
-  mergeSmallCaps(regionItems){
-    // if regions are adjacent and share a font, and are smallcaps, merge them into a single region.
-
-    // share a y position and are w/in some boundary of adjacency
+  mergeSmallCaps(){
+    let regionItems = this.sort().map(item=>{
+      let region = new Region(item); 
+      region.item = item; 
+      return region;
+    });
     
     // get all of the strings that are all caps.
     let allCaps = regionItems.filter((region)=>{
@@ -267,8 +275,9 @@ class TextLayoutAnalyzer {
     const identical = (arr1, arr2) => arr1.every(i=>arr2.includes(i)) && arr2.every(i=>arr1.includes(i));
     if (!(identical(allItems,resultItems) && identical(allItems, this.items))) { debugger; }
     let unaccountedItemRegions = regionItems.filter( r => unaccountedItems.includes(r.item));
-    let result = [...capsLines, ...unaccountedItemRegions];
-    return result.sort(this._sorters.orderByTopLeft);
+    let result = [...capsLines, ...unaccountedItemRegions].sort(this._sorters.orderByTopLeft);
+    //this.region.setItems(result);
+    return result;
   }
 
   appendWhiteSpaceTo(textLayer) {
@@ -314,12 +323,7 @@ class TextLayoutAnalyzer {
     to try and find the tallest whiteSpaces.
     */
 
-    let items = this.sort().map(item=>{
-      let region = new Region(item); 
-      region.item = item; 
-      return region;
-    });
-    let elements = this.mergeSmallCaps(items);
+    let elements = this.mergeSmallCaps();
 
     // turn all of the items into bounding boxes
     // defined by their css measured dimensions.
@@ -505,57 +509,6 @@ class TextLayoutAnalyzer {
     let itemRegions = this.items.map(i => {let r = new Region(i); r.item = i; return r;});
     this.region.setItems(itemRegions);
     this.regions = this.region.partitionByObstacles();
-  }
-
-  groupTextIntoLines() {
-    // if multiple elements overlap in the Y direction
-    // we should calculate whether all of the chunks belong together.
-    //
-    // what's an overlap in the Y direction?
-    // numbers: a.top, a.fontHeight, b.top, b.fontHeight
-
-    // each group has a top and a bottom bound which is the accumulation of
-    // the bounds of all of its elements.
-    this.groups = [];
-    let candidates = this.sort();  // sort elements based on each top left corner
-    let alreadyGrouped = [];
-
-    candidates.forEach((item) => {
-      if (!alreadyGrouped.includes(item)) {
-        // seed the overlap with the initial element
-        let overlap = {
-          top: item.cssStyles.top,
-          bottom: item.cssStyles.top + item.cssStyles.fontHeight,
-          items: [item],
-        };
-        alreadyGrouped.push(item);
-
-        let elementsOverlap = (a, b) => !(a.bottom < b.top || a.top > b.bottom);
-
-        // loop through all of the items
-        candidates.forEach((second) => {
-          let secondBounds = {
-            top: second.cssStyles.top,
-            bottom: second.cssStyles.top + second.cssStyles.fontHeight
-          };
-
-          // check to make sure the element hasn't already been included
-          if (!alreadyGrouped.includes(second) && elementsOverlap(overlap, secondBounds)) {
-            overlap.items.push(second);
-            alreadyGrouped.push(second);
-            overlap.top = Math.min(overlap.top, secondBounds.top);
-            overlap.bottom = Math.max(overlap.bottom, secondBounds.bottom);
-          }
-
-        });
-
-        overlap.items = overlap.items.sort(this._sorters.orderByLeft);
-        overlap.text = overlap.items.map((i) => i.str);
-        this.groups.push(overlap);
-      }
-    });
-
-    return this.groups;
   }
 
   async dumpDocX() {
