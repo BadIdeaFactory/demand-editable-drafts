@@ -217,8 +217,11 @@ class TextLayoutAnalyzer {
   appendTextElementsTo(textLayer) {
     this.calculateLayout();
     this.region.walk((region) => {
-      region.items.forEach(itemRegion => {
-        textLayer.appendChild(itemRegion.item.element);
+      let lines = region.groupItems();
+      lines.forEach(line => {
+        line.items.sort((a,b)=>a.left-b.left).map(itemRegion =>{ 
+          textLayer.appendChild(itemRegion.item.element);
+        });
       });
     });
   }
@@ -281,7 +284,7 @@ class TextLayoutAnalyzer {
   }
 
   appendWhiteSpaceTo(textLayer) {
-    this.findWhiteSpace();
+    this.calculateLayout();
     let spaceContainer = document.createElement("div");
     this.whiteSpaces.forEach((space)=>{
       let el = document.createElement("span");

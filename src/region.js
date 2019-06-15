@@ -24,6 +24,7 @@ class Region {
     }
 
     this.setBounds(bounds, items, obstacles);
+    this.regions = {};
     //if (this.width < 0 || this.height < 0) { debugger; }
   }
 
@@ -210,6 +211,7 @@ class Region {
     if (!fn) { return; }
     const defaultWalker = (region, processor) => {
       const results = [];
+      if (!region.regions) { console.log(region); }
       if (Object.keys(region.regions).length > 0) {
         const orderedKeys = ['top', 'left', 'right', 'bottom'];
         const regions = orderedKeys.map(key=>region.regions[key]);
@@ -224,8 +226,31 @@ class Region {
     return walker(this, fn);
   }
 
-  getText() {
-    let byTopLeft = (a, b) => {
+  groupItems() {
+    let groupByLine = (lines, item) => {
+      let overlap = lines.find(line => line.intersects(item));
+      if (!overlap) {
+        overlap = new Region({
+          top: item.top,
+          bottom: item.bottom,
+          left: 0,
+          right: this.right,
+        }, [item]);
+        lines.push(overlap);
+      } else {
+        overlap.setBounds({
+          top: Math.min(overlap.top, item.top),
+          bottom: Math.max(overlap.bottom, item.bottom),
+          left: 0,
+          right: this.right,
+        }, [...overlap.items, item]);
+      }
+      return lines;
+    };
+
+    let items = this.items.sort((a,b)=>b.height-a.height);
+    let lines = items.reduce(groupByLine, []);
+    const orderByTopLeft = (a, b) => {
       // if the y coordinates are the same
       if (a.top == b.top) {
         // determine what the x position is
@@ -235,40 +260,22 @@ class Region {
         return a.top - b.top;
       }
     };
+    return lines.sort(orderByTopLeft);
+  }
+
+  getText() {
     let text;
-    if (this.regions && Object.entries(this.regions).length > 0) {
-      text = Object.values(this.regions).sort(byTopLeft).map( r => r.getText() ).join("\n");
-    } else if(this.item) {
+    if (this.item) {
       text = this.item.str;
     } else {
-      let groupByLine = (lines, item) => {
-        let overlap = lines.find(line => line.intersects(item));
-        if (!overlap) {
-          overlap = new Region({
-            top: item.top,
-            bottom: item.bottom,
-            left: 0,
-            right: this.right,
-          }, [item]);
-          lines.push(overlap);
-        } else {
-          overlap.setBounds({
-            top: Math.min(overlap.top, item.top),
-            bottom: Math.max(overlap.bottom, item.bottom),
-            left: 0,
-            right: this.right,
-          }, [...overlap.items, item]);
-        }
-        return lines;
-      };
-
-      let items = this.items.sort((a,b)=>b.height-a.height);
-      let lines = items.reduce(groupByLine, []);
-      text = lines.sort(byTopLeft).map(line => 
-        line.items.sort((a,b)=>a.left-b.left).map(i => i.item.str).join(" ")
-      ).join("\n");
+      let textLines = this.walk((region) => {
+        let lines = region.groupItems(); 
+        return lines.map( line => {
+          return line.items.sort((a,b)=>a.left-b.left).map( r => r.item.str ).join(' ');
+        }).join("\n");
+      });
+      text = textLines.join("\n");
     }
-
     return text;
   }
 }
