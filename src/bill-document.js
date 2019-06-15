@@ -73,6 +73,7 @@ class BillDocument {
         state.currentPage.main.path = path;
         state.currentPage.main.regions.push(region);
         state.currentPage.main.margin = calculateBillTextMargins(region);
+        childRegions.right.regions = {}; // disregard partitions inside of main region.
         state.currentPage.main.text.push(childRegions.right.getText());
         state.mainMargins.push(state.currentPage.main.margin);
         //walk(childRegions.bottom, [...path, 'bottom']);
