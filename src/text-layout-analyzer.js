@@ -405,7 +405,7 @@ class TextLayoutAnalyzer {
           let weightedAverageSpaceWidth = weightedAverageNumerator / itemCount;
 
           compactRegion(region);
-          let isMeaningfulWhiteSpace = !( region.width < weightedAverageSpaceWidth || region.aspectRatio > 1 );
+          let isMeaningfulWhiteSpace = (region.width >= weightedAverageSpaceWidth) && (region.aspectRatio <= 1 );
           if ( isMeaningfulWhiteSpace ){
             console.log(region.width, weightedAverageSpaceWidth);
             if (isNaN(weightedAverageSpaceWidth)) { debugger; }
