@@ -393,7 +393,7 @@ class TextLayoutAnalyzer {
             }, reg.items, reg.obstacles));
           };
 
-          let fontCount = region.items.reduce((fonts, item) => {
+          let fontCount = this.items.reduce((fonts, item) => {
             fonts[item.fontName] = ((fonts[item.fontName] || 0) + 1);
             return fonts;
           }, {});
@@ -406,8 +406,9 @@ class TextLayoutAnalyzer {
 
           compactRegion(region);
           let isMeaningfulWhiteSpace = !( region.width < weightedAverageSpaceWidth || region.aspectRatio > 1 );
-          if ( isMeaningfulWhiteSpace ){  
-            // this is causing troubles.
+          if ( isMeaningfulWhiteSpace ){
+            console.log(region.width, weightedAverageSpaceWidth);
+            if (isNaN(weightedAverageSpaceWidth)) { debugger; }
 
             let isIdentical = (left, right) => [...left, ...right].every(bool => bool);
             let isDisjoint  = (left, right) => (left.every(bool=>!bool) || right.every(bool=>!bool));
