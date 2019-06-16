@@ -407,8 +407,6 @@ class TextLayoutAnalyzer {
           compactRegion(region);
           let isMeaningfulWhiteSpace = (region.width >= weightedAverageSpaceWidth) && (region.aspectRatio <= 1 );
           if ( isMeaningfulWhiteSpace ){
-            console.log(region.width, weightedAverageSpaceWidth);
-            if (isNaN(weightedAverageSpaceWidth)) { debugger; }
 
             let isIdentical = (left, right) => [...left, ...right].every(bool => bool);
             let isDisjoint  = (left, right) => (left.every(bool=>!bool) || right.every(bool=>!bool));
