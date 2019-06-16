@@ -105,33 +105,42 @@ class BillDocument {
       const childRegions = region.regions;
       const orderedKeys = ['top', 'left', 'right', 'bottom'];
       if (isBillTextParent(region)) {
-        walk(childRegions.top, [...path, 'top']);
+        if (state.sections.main.length == 0) {
+          walk(childRegions.top, [...path, 'top']);
+        }
         state.currentPage.main.path = path;
         state.currentPage.main.regions.push(region);
+        state.sections.main.push(childRegions.right);
         state.currentPage.main.margin = calculateBillTextMargins(region);
         childRegions.right.regions = {}; // disregard partitions inside of main region.
         state.currentPage.main.text.push(childRegions.right.getText({line:mungeLine}));
         state.mainMargins.push(state.currentPage.main.margin);
         //walk(childRegions.bottom, [...path, 'bottom']);
       } else if (Object.entries(childRegions).length > 0) {
-        orderedKeys.map(key =>{ walk(childRegions[key], [...path, key]); });
+        orderedKeys.map(key =>{ 
+          walk(childRegions[key], [...path, key]);
+        });
       } else {
         if (state.currentPage.billTextParentPath) {
           state.currentPage.after.text.push(region.getText({line:mungeLine}));
           state.currentPage.after.regions.push(region);
+          state.sections.after.push(region);
         } else {
           state.currentPage.before.text.push(region.getText({line:mungeLine}));
           state.currentPage.before.regions.push(region);
+          state.sections.before.push(region);
         }
       }
     };
 
-    let state = { mainMargins:[], pages: [] };
+    let state = { mainMargins:[], pages: [], sections: { before: [], main: [], after:[] } };
     this._pages.forEach(page =>{
       page.initializeSections();
       state.currentPage = page;
       walk(page.region);
       state.pages.push(page);
+      let sectionKey = (state.sections.main.length > 0 ? 'main' : 'before');
+      state.sections[sectionKey].push("<PAGEBREAK/>");
     });
     delete state.currentPage;
 
@@ -165,21 +174,32 @@ class BillDocument {
       return result.join("\n");
     }).join("\n-----------------\n");
   }
+
+  derp() {
+    const billData = this.process();
+    // walk the region tree
+    debugger;
+  }
   
   // notes about docx format.
   //   - all measurements in OpenOfficeXML is in TWIPs (twentieth of a point)
   dumpDocX() {
-    let doc = new docx.Document(undefined,{
+    //let doc = new docx.Document(undefined,{
+    //  lineNumberCountBy: 1,
+    //  lineNumberRestart: docx.LineNumberRestartFormat.NEW_PAGE,
+    //});
+    //this._pages.reduce((doc, page, index) => {
+    //  let opts = {};
+    //  if (index == this._pages.length-1) { opts.noPageBreak = true; }
+    //  page.appendToDocX(doc, opts);
+    //  return doc;
+    //}, doc);
+    //return doc;
+    const doc = new docx.Document();
+    doc.addSection({
       lineNumberCountBy: 1,
       lineNumberRestart: docx.LineNumberRestartFormat.NEW_PAGE,
     });
-    this._pages.reduce((doc, page, index) => {
-      let opts = {};
-      if (index == this._pages.length-1) { opts.noPageBreak = true; }
-      page.appendToDocX(doc, opts);
-      return doc;
-    }, doc);
-    return doc;
   }
 }
 
@@ -208,31 +228,6 @@ class BillPage {
       }
     };
     return linearize(this.region);
-  }
-
-  mungeLine(line){
-    let mungers = [
-      (l) => l.replace(/‘‘/g, '“'),
-      (l) => l.replace(/’’/g, '”'),
-      (l) => l.replace(/\s+/, ' '),
-      (l) => l.replace(/\bll+\b/g, "＿"),
-    ];
-    return mungers.reduce((l, munger) => munger(l), line);
-  }
-
-
-  appendToDocX(doc, options={}){
-    let billTextParent = this.getBillTextParent();
-    let billTextRegion = billTextParent.regions.right;
-    let lineNumbers    = billTextParent.regions.left;
-    let marginLeft     = lineNumbers.right;
-    
-    let graf = new docx.Paragraph(this.getText());
-    graf.spacing({
-      line: 240*2, // line spacing is done in 1/240ths of a line.
-    });
-    if (!options.noPageBreak){ graf.pageBreak(); }
-    doc.addParagraph(graf);
   }
 }
 
