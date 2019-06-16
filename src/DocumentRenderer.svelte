@@ -217,7 +217,7 @@
     await loadDocument(data);
     ctx = pageCanvas.getContext('2d');
     await getPage(pageNum);
-    billAnalyzer = new BillDocument(pdfDoc);
+    billAnalyzer = new BillDocument(pdfDoc, {scale: scale});
     await billAnalyzer.calculateLayout();
     console.log(billAnalyzer.getBillText());
   });

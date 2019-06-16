@@ -26,7 +26,7 @@ class BillDocument {
       let pages = [];
       for (let pageNumber = 1; pageNumber <= this.pageCount ; pageNumber++) {
         let page = await this.getPage(pageNumber);
-        let viewport = page.getViewport({scale:1});
+        let viewport = page.getViewport({scale:this.scale});
         let canvas = document.createElement('canvas');
         canvas.height = viewport.height;
         canvas.width  = viewport.width;
