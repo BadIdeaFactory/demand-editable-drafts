@@ -73,50 +73,31 @@ class BillDocument {
 
       const sortedElements = lineRegion.items.sort((a,b)=>a.left-b.left);
       const repairedElements = sortedElements.reduce((els, el, id, sorted)=>{
-        if (id > 0){
-          let itemText = el.item.str;
-          if (itemText.match(capitalMatcher)){
-            let previousEl = sorted[id-1];
-            if (previousEl.height > el.height) {
-              // if the previous element is larger than this one then
-              // this is probably all caps.
-              els.push(el.item.str);
-            } else {
-              els.push(" ", el.item.str);
-            }
-          } else {
-            els.push(" ", el.item.str);
-          }
-        } else {
-          // this needs to check the previous line some how
-          // to see if the first element is a continuation of
-          // a smallCaps run from the previous line.
-          els.push(el.item.str);
+        const isSmallCaps = (el, id, sorted)=>{
+          let previousEl = sorted[id-1];
+          return (el.item.str.match(capitalMatcher) && previousEl.height > el.height);
+        };
+        // don't push a space if this is the first element,
+        // or if this element is smallcaps.
+        const itemText = el.item.str;
+        if (id > 0 && !isSmallCaps(el, id, sorted)) { 
+          els.push(" ");
         }
+        els.push(itemText);
         return els;
       }, []);
-      const lineText = sortedElements.map( r => r.item.str ).join(' ');
       const repairedText = repairedElements.join('');
-      console.log(repairedText.length, lineText.length)
-      if (repairedText.length < lineText.length) { 
-        //console.log(repairedText);
-        //console.log(lineText);
-        //debugger;
-      }
-      //let allCaps = sortedElements.filter(r=>r.item.str.match(capitalMatcher));
-      //if (allCaps.length > 0){ debugger; }
       
       let mungers = [
         (l) => l.replace(/‘‘/g, '“'),
         (l) => l.replace(/’’/g, '”'),
-        (l) => l.replace(/\s+/, ' '),
+        (l) => l.replace(/\s+/g, ' '),
         (l) => {
           if (l.match(/\bll+\b/)) { return l.replace(/l/g, '＿'); }
           return l;
         },
       ];
       let resultText = mungers.reduce((l, munger) => munger(l), repairedText);
-      console.log(state.currentPage.main.margin);
       return resultText;
     };
 
