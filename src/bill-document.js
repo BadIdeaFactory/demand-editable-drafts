@@ -176,7 +176,9 @@ class BillDocument {
     }).join("\n-----------------\n");
   }
 
-  derp() {
+  // notes about docx format.
+  //   - all measurements in OpenOfficeXML is in TWIPs (twentieth of a point)
+  dumpDocX() {
     const processSection = (results, region, id, lines) => {
       if ( region instanceof Region ){
         const getLineStyles = (line) => {
@@ -237,27 +239,6 @@ class BillDocument {
 
     debugger;
     return doc;
-  }
-  
-  // notes about docx format.
-  //   - all measurements in OpenOfficeXML is in TWIPs (twentieth of a point)
-  dumpDocX() {
-    //let doc = new docx.Document(undefined,{
-    //  lineNumberCountBy: 1,
-    //  lineNumberRestart: docx.LineNumberRestartFormat.NEW_PAGE,
-    //});
-    //this._pages.reduce((doc, page, index) => {
-    //  let opts = {};
-    //  if (index == this._pages.length-1) { opts.noPageBreak = true; }
-    //  page.appendToDocX(doc, opts);
-    //  return doc;
-    //}, doc);
-    //return doc;
-    const doc = new docx.Document();
-    doc.addSection({
-      lineNumberCountBy: 1,
-      lineNumberRestart: docx.LineNumberRestartFormat.NEW_PAGE,
-    });
   }
 }
 
