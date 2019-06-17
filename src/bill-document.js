@@ -1,5 +1,6 @@
 import TextLayoutAnalyzer from './text-layout-analyzer.js';
 import docx from 'docx';
+import Region from './region.js';
 
 // This class wraps and controls a `pdfjs` document and it's canvas.
 class BillDocument {
@@ -176,9 +177,66 @@ class BillDocument {
   }
 
   derp() {
+    const processSection = (results, region, id, lines) => {
+      if ( region instanceof Region ){
+        const getLineStyles = (line) => {
+          return line.items.reduce((styles, itemRegion)=>{
+            styles.push({ fontSize: itemRegion.height, fontName: itemRegion.item.fontName, });
+            return styles;
+          }, []);
+        };
+
+        const stylesMatch = (graf, line) => {
+          const closeEnough  = (a,b) => (Math.abs(a - b) < 0.001);
+          const styleMatcher = (a,b) => (closeEnough(a.fontSize, b.fontSize) && a.fontName == b.fontName);
+          const lineStyles = getLineStyles(line);
+          return graf.styles.some(grafStyle => {
+            return lineStyles.some(lineStyle => styleMatcher(grafStyle, lineStyle));
+          });
+        };
+
+        const lines = region.groupItems();
+        const paragraphs = [];
+        lines.reduce((grafs, line, id, lines) => {
+          let currentGraf = grafs[grafs.length-1];
+          if (currentGraf && stylesMatch(currentGraf, line)) {
+            currentGraf.lines.push(line);
+            currentGraf.text.push(line.getText());
+            currentGraf.styles.push(...getLineStyles(line));
+          } else {
+            currentGraf = { lines: [line], text: [line.getText()], styles: getLineStyles(line), };
+            grafs.push(currentGraf);
+          }
+          return grafs;
+        }, paragraphs);
+
+        if ( lines[id+1] == "<PAGEBREAK/>" ) {
+          
+        }
+        results.push(paragraphs);
+      }
+      return results;
+    };
+    
     const billData = this.process();
     // walk the region tree
+    const billHeader = billData.sections.before;
+    const billMain = billData.sections.main;
+
+    const doc = new docx.Document();
+
+    doc.addSection();
+    const headerLines = billHeader.reduce(processSection, []);
+
+    // start the main section.
+    doc.addSection({
+      lineNumberCountBy: 1,
+      lineNumberRestart: docx.LineNumberRestartFormat.NEW_PAGE,
+    });
+    const mainLines = billMain.reduce(processSection, []);
+
     debugger;
+    return doc;
   }
   
   // notes about docx format.
