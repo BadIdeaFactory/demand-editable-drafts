@@ -177,10 +177,18 @@ class BillDocument {
     }).join("\n-----------------\n");
   }
 
+  // This method takes the flattened list of regions created
+  // as part of `this.process` and maps those inputs into
+  // a DocX document.
+  dumpDocX(options={}) {
   // notes about docx format.
   //   - all measurements in OpenOfficeXML is in TWIPs (twentieth of a point)
-  dumpDocX(options={}) {
-    const processSection = (doc, region, id, inputLines) => {
+
+  // `processSection` is a reducer that will append all of the elements
+  // in a section (the bill header, or the bill main) to the document.
+  //
+  // It needs to 
+  const processSection = (doc, region, id, inputLines) => {
       // set up a debugging mode.
       let result = (doc instanceof docx.Document) ? doc : doc.docx;
       if ( region instanceof Region ){
@@ -201,6 +209,7 @@ class BillDocument {
         };
 
         const lines = region.groupItems();
+        let otherLines = lines.map(l=> new Line(l));
         const paragraphs = [];
         lines.reduce((grafs, line, id, lines) => {
           let currentGraf = grafs[grafs.length-1];
@@ -211,11 +220,12 @@ class BillDocument {
             const run = new docx.TextRun(line.getText({line:this.mungeLine})).break();
             currentGraf.data = currentGraf.data.addRun(run);
           } else {
-            const graf = new docx.Paragraph(line.getText({line:this.mungeLine}));
+            const styles = getLineStyles(line);
+            let graf = new docx.Paragraph(line.getText({line:this.mungeLine}));
             currentGraf = { 
               lines: [line], 
               text: [line.getText()], 
-              styles: getLineStyles(line),
+              styles: styles,
               data: graf,
             };
             grafs.push(currentGraf);
@@ -259,6 +269,135 @@ class BillDocument {
 
     debugger;
     return doc;
+  }
+}
+
+class Line {
+  constructor(region){
+    this.region = region;
+    this.items  = region.items;
+    this.analyze();
+    console.log(this.getText());
+  }
+
+  analyze() {
+    this.runs = []; // repaired text
+
+    let capitalMatcher = /^(\p{Lu}|\d|\W)*\p{Lu}(\p{Lu}|\d|\W)*$/u;
+    if (!capitalMatcher.unicode) { // if this browser doesn't support unicode regexp
+      // then we'll just deal w/ english capital letters.
+      capitalMatcher = /^([^a-z]|\W)*[A-Z]([^a-z]|\W)*$/; // strings w/ at least one capital 
+    }
+
+    const sortedElements = this.items.sort((a,b)=>a.left-b.left);
+    const runs = sortedElements.reduce((runs, el, id, sorted)=>{
+      const isSmallCaps = (el, id, sorted)=>{
+        let previousEl = sorted[id-1];
+        return (
+          el.item.str.match(capitalMatcher) && 
+          previousEl.height > el.height &&
+          el.item.fontName == previousEl.item.fontName
+        );
+      };
+      // don't push a space if this is the first element,
+      // or if this element is smallcaps.
+      //const itemText = el.item.str;
+      //if (id > 0 && !isSmallCaps(el, id, sorted)) { els.push(" "); }
+
+      let components = [];
+      if (id > 0 && isSmallCaps(el, id, sorted)) {
+        // split the previousEl, and merge the capital with this run
+        // and mark this run as small caps.
+        let previous = runs.pop();
+        const matches = previous.text.match(/^(.*)\b(\w+)$/u);
+        let [matchText, previousText, dangler] = matches;
+        let text = `${dangler}${el.item.str.toLocaleLowerCase()}`;
+
+        previous.styles.removedDanglingSmallCap = true;
+        previous.text = previousText;
+        let smallCapsRun = {
+          regions: [...previous.regions, el],
+          text:    text,
+          styles:  { smallcaps: true },
+        };
+        if (previous.text.length > 0) { components.push(previous); }
+        components.push(smallCapsRun);
+      } else {
+        components = [{
+          regions: [el],
+          text:    el.getText(),
+          styles:  {},
+        }];
+      }
+      runs.push(...components);
+      return runs;
+    }, []);
+
+    this.runs   = runs;
+    this.styles = {};
+    this.text = this.runs.map(r=>r.text).join(" ");
+  }
+
+  extractStyle(region){
+    return { fontSize: region.height, fontName: regionegion.item.fontName, };
+  }
+
+  getStyles(){
+    return this.items.map(itemRegion=>this.extractStyle(itemRegion));
+  }
+
+  closeEnough(a, b){ return (Math.abs(a - b) < 0.001); }
+
+  styleMatches(region) {
+    const styleMatcher = (a,b) => (this.closeEnough(a.fontSize, b.fontSize) && a.fontName == b.fontName);
+    const regionStyles = this.extractStyle(region);
+    return styleMatcher(this.styles, regionStyles);
+  }
+
+  getText(){
+    let mungers = [
+      (l) => l.replace(/‘‘/g, '“'),
+      (l) => l.replace(/’’/g, '”'),
+      (l) => l.replace(/\s+/g, ' '),
+      (l) => {
+        if (l.match(/\bll+\b/)) { return l.replace(/l/g, '＿'); }
+        return l;
+      },
+    ];
+    let resultText = mungers.reduce((l, munger) => munger(l), this.text);
+    return resultText;
+  }
+}
+
+class BillChunk {
+  constructor() {
+    this.setStyle();
+    this.lines  = [];
+    this.text   = [];
+  }
+
+  setStyle(style){
+    const newStyles = {};
+    const styleKeys = ['fontSize', 'fontName', 'leftMargin'];
+    if (style) { styleKeys.forEach(key => newStyles[key] = style[key]); }
+    this.styles = newStyles;
+    return this.styles;
+  }
+
+  styleMatches(line) {
+    const closeEnough  = (a,b) => (Math.abs(a - b) < 0.001);
+    const styleMatcher = (a,b) => (closeEnough(a.fontSize, b.fontSize) && a.fontName == b.fontName);
+    const lineStyles = line.getStyles();
+    return lineStyles.some(lineStyle => styleMatcher(this.styles, lineStyle));
+  }
+
+  appendLine(line, options={}) {
+    if (this.styleMatches(line)){
+      this.text.push(line.region.getText({line: this.mungeLine}));
+      this.lines.push(line);
+    } else {
+      throw "line styles don't match this paragraph's styles.";
+    }
   }
 }
 
