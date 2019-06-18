@@ -178,8 +178,10 @@ class BillDocument {
 
   // notes about docx format.
   //   - all measurements in OpenOfficeXML is in TWIPs (twentieth of a point)
-  dumpDocX() {
-    const processSection = (results, region, id, lines) => {
+  dumpDocX(options={}) {
+    const processSection = (doc, region, id, inputLines) => {
+      // set up a debugging mode.
+      let result = (doc instanceof docx.Document) ? doc : doc.docx;
       if ( region instanceof Region ){
         const getLineStyles = (line) => {
           return line.items.reduce((styles, itemRegion)=>{
@@ -205,19 +207,32 @@ class BillDocument {
             currentGraf.lines.push(line);
             currentGraf.text.push(line.getText());
             currentGraf.styles.push(...getLineStyles(line));
+            currentGraf.data.push(new docx.Paragraph(line.getText()));
           } else {
-            currentGraf = { lines: [line], text: [line.getText()], styles: getLineStyles(line), };
+            currentGraf = { 
+              lines: [line], 
+              text: [line.getText()], 
+              styles: getLineStyles(line),
+              data: [new docx.Paragraph(line.getText())],
+            };
             grafs.push(currentGraf);
           }
           return grafs;
         }, paragraphs);
 
-        if ( lines[id+1] == "<PAGEBREAK/>" ) {
-          
+        if ( inputLines[id+1] == "<PAGEBREAK/>" ) {
+          let lastGraf = paragraphs[paragraphs.length-1];
+          let lastGrafData = lastGraf.data[lastGraf.data.length-1];
+          lastGraf.data[lastGraf.data.length-1] = lastGrafData.pageBreak();
         }
-        results.push(paragraphs);
+
+        paragraphs.map(graf => graf.data).flat().forEach(d => result.addParagraph(d));
+        if (!(doc instanceof docx.Document)) { 
+          doc.paragraphs.push(paragraphs);
+          doc.docx = result;
+        }
       }
-      return results;
+      return result;
     };
     
     const billData = this.process();
@@ -225,17 +240,20 @@ class BillDocument {
     const billHeader = billData.sections.before;
     const billMain = billData.sections.main;
 
-    const doc = new docx.Document();
+    let doc =  new docx.Document();
 
-    doc.addSection();
-    const headerLines = billHeader.reduce(processSection, []);
+    doc.addSection({
+      
+    });
+    const headerLines = billHeader.reduce(processSection, doc);
 
     // start the main section.
     doc.addSection({
       lineNumberCountBy: 1,
       lineNumberRestart: docx.LineNumberRestartFormat.NEW_PAGE,
+      lineNumberDistance: 240,
     });
-    const mainLines = billMain.reduce(processSection, []);
+    const mainLines = billMain.reduce(processSection, doc);
 
     debugger;
     return doc;
