@@ -42,6 +42,43 @@ class BillDocument {
     return this._pages;
   }
 
+  mungeLine(lineRegion){
+    let capitalMatcher = /^(\p{Lu}|\d|\W)*\p{Lu}(\p{Lu}|\d|\W)*$/u;
+    if (!capitalMatcher.unicode) { // if this browser doesn't support unicode regexp
+      // then we'll just deal w/ english capital letters.
+      capitalMatcher = /^([^a-z]|\W)*[A-Z]([^a-z]|\W)*$/; // strings w/ at least one capital 
+    }
+
+    const sortedElements = lineRegion.items.sort((a,b)=>a.left-b.left);
+    const repairedElements = sortedElements.reduce((els, el, id, sorted)=>{
+      const isSmallCaps = (el, id, sorted)=>{
+        let previousEl = sorted[id-1];
+        return (el.item.str.match(capitalMatcher) && previousEl.height > el.height);
+      };
+      // don't push a space if this is the first element,
+      // or if this element is smallcaps.
+      const itemText = el.item.str;
+      if (id > 0 && !isSmallCaps(el, id, sorted)) { 
+        els.push(" ");
+      }
+      els.push(itemText);
+      return els;
+    }, []);
+    const repairedText = repairedElements.join('');
+    
+    let mungers = [
+      (l) => l.replace(/‘‘/g, '“'),
+      (l) => l.replace(/’’/g, '”'),
+      (l) => l.replace(/\s+/g, ' '),
+      (l) => {
+        if (l.match(/\bll+\b/)) { return l.replace(/l/g, '＿'); }
+        return l;
+      },
+    ];
+    let resultText = mungers.reduce((l, munger) => munger(l), repairedText);
+    return resultText;
+  };
+
   process() {
     const isBillTextParent = (region) => {
       if (region.obstacles.length > 0) {
@@ -65,42 +102,6 @@ class BillDocument {
       const billTextLeftEdge      = billTextRegion.left;
       return billTextLeftEdge - rightEdgeOfLeftMargin;
     };
-    const mungeLine = (lineRegion) => {
-      let capitalMatcher = /^(\p{Lu}|\d|\W)*\p{Lu}(\p{Lu}|\d|\W)*$/u;
-      if (!capitalMatcher.unicode) { // if this browser doesn't support unicode regexp
-        // then we'll just deal w/ english capital letters.
-        capitalMatcher = /^([^a-z]|\W)*[A-Z]([^a-z]|\W)*$/; // strings w/ at least one capital 
-      }
-
-      const sortedElements = lineRegion.items.sort((a,b)=>a.left-b.left);
-      const repairedElements = sortedElements.reduce((els, el, id, sorted)=>{
-        const isSmallCaps = (el, id, sorted)=>{
-          let previousEl = sorted[id-1];
-          return (el.item.str.match(capitalMatcher) && previousEl.height > el.height);
-        };
-        // don't push a space if this is the first element,
-        // or if this element is smallcaps.
-        const itemText = el.item.str;
-        if (id > 0 && !isSmallCaps(el, id, sorted)) { 
-          els.push(" ");
-        }
-        els.push(itemText);
-        return els;
-      }, []);
-      const repairedText = repairedElements.join('');
-      
-      let mungers = [
-        (l) => l.replace(/‘‘/g, '“'),
-        (l) => l.replace(/’’/g, '”'),
-        (l) => l.replace(/\s+/g, ' '),
-        (l) => {
-          if (l.match(/\bll+\b/)) { return l.replace(/l/g, '＿'); }
-          return l;
-        },
-      ];
-      let resultText = mungers.reduce((l, munger) => munger(l), repairedText);
-      return resultText;
-    };
 
     const walk = (region, path=[]) => {
       const childRegions = region.regions;
@@ -114,7 +115,7 @@ class BillDocument {
         state.sections.main.push(childRegions.right);
         state.currentPage.main.margin = calculateBillTextMargins(region);
         childRegions.right.regions = {}; // disregard partitions inside of main region.
-        state.currentPage.main.text.push(childRegions.right.getText({line:mungeLine}));
+        state.currentPage.main.text.push(childRegions.right.getText({line:this.mungeLine}));
         state.mainMargins.push(state.currentPage.main.margin);
         //walk(childRegions.bottom, [...path, 'bottom']);
       } else if (Object.entries(childRegions).length > 0) {
@@ -123,11 +124,11 @@ class BillDocument {
         });
       } else {
         if (state.currentPage.billTextParentPath) {
-          state.currentPage.after.text.push(region.getText({line:mungeLine}));
+          state.currentPage.after.text.push(region.getText({line:this.mungeLine}));
           state.currentPage.after.regions.push(region);
           state.sections.after.push(region);
         } else {
-          state.currentPage.before.text.push(region.getText({line:mungeLine}));
+          state.currentPage.before.text.push(region.getText({line:this.mungeLine}));
           state.currentPage.before.regions.push(region);
           state.sections.before.push(region);
         }
@@ -207,13 +208,15 @@ class BillDocument {
             currentGraf.lines.push(line);
             currentGraf.text.push(line.getText());
             currentGraf.styles.push(...getLineStyles(line));
-            currentGraf.data.push(new docx.Paragraph(line.getText()));
+            const run = new docx.TextRun(line.getText({line:this.mungeLine})).break();
+            currentGraf.data = currentGraf.data.addRun(run);
           } else {
+            const graf = new docx.Paragraph(line.getText({line:this.mungeLine}));
             currentGraf = { 
               lines: [line], 
               text: [line.getText()], 
               styles: getLineStyles(line),
-              data: [new docx.Paragraph(line.getText())],
+              data: graf,
             };
             grafs.push(currentGraf);
           }
@@ -222,8 +225,7 @@ class BillDocument {
 
         if ( inputLines[id+1] == "<PAGEBREAK/>" ) {
           let lastGraf = paragraphs[paragraphs.length-1];
-          let lastGrafData = lastGraf.data[lastGraf.data.length-1];
-          lastGraf.data[lastGraf.data.length-1] = lastGrafData.pageBreak();
+          lastGraf.data = lastGraf.data.pageBreak();
         }
 
         paragraphs.map(graf => graf.data).flat().forEach(d => result.addParagraph(d));

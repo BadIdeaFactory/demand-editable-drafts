@@ -93,11 +93,24 @@ Third, concatenating text items together loses information about indentation.
 
 All three of these concerns should be resolveable through the mechanism outlined in [Breuel 2003a][].  A basic outline of the technique is to find the largest vertically oriented white space that separates text elements.
 
-### Congressional style
+### Styling
 
-#### Paragraphs
+OpenOfficeXML _should_ have all of the necessary formatting elements required to faithfully reproduce legislative PDFs.
 
-Paragraphs always begin with an inden
+- Paragraphs
+- Paragraph indendation
+- Font styling
+- SmallCaps
+- Sections (to divide the bill header from the numbered bill text)
+- Line Numbering
+
+Within LibreOffice it's possible to [turn off line numbering for partcular paragraphs](https://help.libreoffice.org/Writer/Adding_Line_Numbers) by creating a paragraph style without line numbers.  Likewise [this is possible in desktop Word](https://support.office.com/en-us/article/start-page-numbering-later-in-your-document-c73e3d55-d722-4bd0-886e-0b0bd0eb3f02#startlater) but requires creating a separate section and unlinking the styles from the previous section.
+
+#### Congressional Style
+
+##### Paragraphs
+
+Paragraphs always begin with an indent
 
 # Annotated Bibliography
 
