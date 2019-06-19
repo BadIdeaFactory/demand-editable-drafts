@@ -298,7 +298,7 @@ class Line {
       let components = [];
       // smallCaps have to be noted for styling.
       if (isSmallCaps(el, id, sorted)) {
-        let previous = runs.pop();
+        let previous = runs[runs.length-1]; //runs.pop();
         let danglerMatch;
         if (previous) { danglerMatch = previous.text.match(/^(.*)\b(\w+)$/u); }
         // if the previous element has a dangling capital letter for the smallCaps
@@ -322,20 +322,19 @@ class Line {
           // and note the smallCaps and the edit on the previous run.
           smallCapsRun.styles.smallCaps = true;
           previous.styles.removedDanglingSmallCap = true;
-          // if after the edit, the previous run has no text, don't push it.
-          if (previous.text.length > 0) { components.push(previous); }
+          // if after the edit, the previous run has no text, discard it.
+          if (previous.text.length == 0) { runs.pop(); }
           // but we'll always need the smallCaps run.
           components.push(smallCapsRun);  
         } else {
           const text = `${el.item.str.toLocaleLowerCase()} `;
           const styles = this.extractStyle(el);
           styles.smallCaps = true;
-          if (previous) { components.push(previous); }
-          components.push({
+          components = [{
             regions: [el],
             text:    text,
             styles:  styles,
-          });  
+          }];  
         }
       } else {
         components = [{
