@@ -219,7 +219,7 @@
     await getPage(pageNum);
     billAnalyzer = new BillDocument(pdfDoc, {scale: scale});
     await billAnalyzer.calculateLayout();
-    console.log(billAnalyzer.getBillText());
+    // console.log(billAnalyzer.getBillText());
   });
 
   onDestroy(() => { unloadDocument(); });
