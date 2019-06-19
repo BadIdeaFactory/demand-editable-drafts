@@ -239,7 +239,7 @@ class BillDocument {
           if (currentGraf && line.styleMatches(currentGraf)) {
             currentGraf.appendLine(line);
           } else {
-            let newGraf = new BillChunk();
+            let newGraf = new BillParagraph();
             newGraf.appendLine(line);
             grafs.push(newGraf);
           }
@@ -390,7 +390,7 @@ class Line {
   }
 }
 
-class BillChunk {
+class BillParagraph {
   constructor() {
     this.setStyle();
     this.lines  = [];
