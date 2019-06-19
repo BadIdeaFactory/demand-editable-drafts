@@ -106,6 +106,12 @@ OpenOfficeXML _should_ have all of the necessary formatting elements required to
 
 Within LibreOffice it's possible to [turn off line numbering for partcular paragraphs](https://help.libreoffice.org/Writer/Adding_Line_Numbers) by creating a paragraph style without line numbers.  Likewise [this is possible in desktop Word](https://support.office.com/en-us/article/start-page-numbering-later-in-your-document-c73e3d55-d722-4bd0-886e-0b0bd0eb3f02#startlater) but requires creating a separate section and unlinking the styles from the previous section.
 
+#### Converting from pixels to points
+
+https://github.com/mozilla/pdf.js/issues/8588
+https://developer.mozilla.org/en-US/docs/Web/API/Window/devicePixelRatio
+https://stackoverflow.com/questions/21719393/how-to-improve-display-quality-in-pdf-js
+
 #### Congressional Style
 
 ##### Paragraphs
