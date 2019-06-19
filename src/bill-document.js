@@ -404,11 +404,18 @@ class Line {
     return graf;
   }
 
+  _setDocXStyles(run){
+    const pixelsPerInch = (96*window.devicePixelRatio);
+    // fontSize is measured in pixels w/ a a 72dpi assumption
+    let fontPoints = this.styles.fontSize * (72/pixelsPerInch);
+    return run.size(fontPoints*2).font('Times');
+  }
+
   getTextRuns() {
     return this.runs.map(runItem => {
       let run = new docx.TextRun(this.munge(runItem.text));
       if (runItem.styles.smallCaps) { run = run.smallCaps(); }
-      return run;
+      return this._setDocXStyles(run);
     });
   }
 }
@@ -464,7 +471,7 @@ class BillParagraph {
       runs.forEach(run => graf.addRun(run));
     });
     if (this.pageBreak) { graf = graf.pageBreak(); }
-    doc.addParagraph(graf);
+    doc.addParagraph(graf.spacing({line: 240*2}));
   }
 }
 
