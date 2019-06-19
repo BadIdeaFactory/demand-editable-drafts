@@ -192,49 +192,8 @@ class BillDocument {
       // set up a debugging mode.
       let result = (doc instanceof docx.Document) ? doc : doc.docx;
       if ( region instanceof Region ){
-        const getLineStyles = (line) => {
-          return line.items.reduce((styles, itemRegion)=>{
-            styles.push({ fontSize: itemRegion.height, fontName: itemRegion.item.fontName, });
-            return styles;
-          }, []);
-        };
-
-        const stylesMatch = (graf, line) => {
-          const closeEnough  = (a,b) => (Math.abs(a - b) < 0.001);
-          const styleMatcher = (a,b) => (closeEnough(a.fontSize, b.fontSize) && a.fontName == b.fontName);
-          const lineStyles = getLineStyles(line);
-          return graf.styles.some(grafStyle => {
-            return lineStyles.some(lineStyle => styleMatcher(grafStyle, lineStyle));
-          });
-        };
-
-        const lines = region.groupItems();
-        const paragraphs = [];
-        lines.reduce((grafs, line, id, lines) => {
-          let currentGraf = grafs[grafs.length-1];
-          if (currentGraf && stylesMatch(currentGraf, line)) {
-            currentGraf.lines.push(line);
-            currentGraf.text.push(line.getText());
-            currentGraf.styles.push(...getLineStyles(line));
-            const run = new docx.TextRun(line.getText({line:this.mungeLine})).break();
-            currentGraf.data = currentGraf.data.addRun(run);
-          } else {
-            const styles = getLineStyles(line);
-            let graf = new docx.Paragraph(line.getText({line:this.mungeLine}));
-            currentGraf = { 
-              lines: [line], 
-              text: [line.getText()], 
-              styles: styles,
-              data: graf,
-            };
-            grafs.push(currentGraf);
-          }
-          return grafs;
-        }, paragraphs);
-//-----------------------------------
-        let otherLines = lines.map(l=> new Line(l));
-        let otherParagraphs = [];
-        otherLines.reduce((grafs, line, id, lines) => {
+        const lines = region.groupItems().map(l=> new Line(l));
+        const paragraphs = lines.reduce((grafs, line) => {
           let currentGraf = grafs[grafs.length-1];
           if (currentGraf && line.styleMatches(currentGraf)) {
             currentGraf.appendLine(line);
@@ -244,21 +203,17 @@ class BillDocument {
             grafs.push(newGraf);
           }
           return grafs;
-        }, otherParagraphs);
+        }, []);
 
         if ( inputLines[id+1] == "<PAGEBREAK/>" ) {
           let lastGraf = paragraphs[paragraphs.length-1];
-          let otherLastGraf = otherParagraphs[otherParagraphs.length-1];
-          otherLastGraf.pageBreak = true;
-          lastGraf.data = lastGraf.data.pageBreak();
+          lastGraf.pageBreak = true;
         }
 
-        paragraphs.map(graf => graf.data).flat().forEach(d => result.addParagraph(d));
+        paragraphs.forEach(graf => graf.addToDoc(doc));
         if (!(doc instanceof docx.Document)) { 
-          doc.paragraphs.push(paragraphs);
-          doc.docx = result;
+          doc.paragraphs.push(...paragraphs);
         }
-        debugger;
       }
       return result;
     };
@@ -289,8 +244,8 @@ class Line {
   constructor(region){
     this.region = region;
     this.items  = region.items;
+    this.runs   = [];
     this.analyze();
-    console.log(this.getText());
   }
 
   analyze() {
@@ -302,29 +257,50 @@ class Line {
       capitalMatcher = /^([^a-z]|\W)*[A-Z]([^a-z]|\W)*$/; // strings w/ at least one capital 
     }
 
-    const sortedElements = this.items.sort((a,b)=>a.left-b.left);
-    const runs = sortedElements.reduce((runs, el, id, sorted)=>{
-      const isSmallCaps = (el, id, sorted)=>{
-        let previousEl = sorted[id-1];
-        return (
-          el.item.str.match(capitalMatcher) && 
-          previousEl.height > el.height &&
-          el.item.fontName == previousEl.item.fontName
-        );
-      };
+    const isSmallCaps = (el, id, sorted)=>{
+      if (el.item.str.match(capitalMatcher)) {
+        let mainHeight, fontName;
+        if (id == 0) {
+          let heights = sorted.map(r=>r.item.height).filter(h=>!this.closeEnough(h,el.item.height));
+          let firstHeight = heights[0];
+          if (heights.every(h=>this.closeEnough(h,firstHeight))) { 
+            mainHeight = firstHeight; 
+          } else {
+            console.log("Found multiple font heights while looking for SmallCaps", heights);
+            mainHeight = firstHeight;
+          }
+          fontName = el.item.fontName;
+        } else {
+          let previousEl = sorted[id-1];
+          mainHeight = previousEl.height;
+          fontName = previousEl.item.fontName;
+        }
+        return ( mainHeight > el.height && el.item.fontName == fontName);
+      } else {
+        return false;
+      }
+    };
+
+    const gatherRuns = (runs, el, id, sorted)=>{
       // don't push a space if this is the first element,
       // or if this element is smallcaps.
       //const itemText = el.item.str;
       //if (id > 0 && !isSmallCaps(el, id, sorted)) { els.push(" "); }
 
       let components = [];
-      if (id > 0 && isSmallCaps(el, id, sorted)) {
+      const elIsSmallCaps = isSmallCaps(el, id, sorted);
+      if (id == 0 && el.item.str.toUpperCase() == el.item.str) { 
+        //console.log(el.item.str, elIsSmallCaps);
+        //debugger;
+      }
+      if (id > 0 && elIsSmallCaps) {
         // split the previousEl, and merge the capital with this run
         // and mark this run as small caps.
         let previous = runs.pop();
         const matches = previous.text.match(/^(.*)\b(\w+)$/u);
         let [matchText, previousText, dangler] = matches;
         let text = `${dangler}${el.item.str.toLocaleLowerCase()}`;
+        if (sorted[id+1].item.str.match(/^\w/)) { text += ' '; }
 
         previous.text = previousText;
         let smallCapsRun = {
@@ -337,8 +313,16 @@ class Line {
         previous.styles.removedDanglingSmallCap = true;
         if (previous.text.length > 0) { components.push(previous); }
         components.push(smallCapsRun);
+      } else if (elIsSmallCaps) {
+        const text = `${el.item.str.toLocaleLowerCase()} `;
+        const styles = this.extractStyle(el);
+        styles.smallCaps = true;
+        components = [{
+          regions: [el],
+          text:    text,
+          styles:  styles,
+        }];
       } else {
-        console.log(this.extractStyle(el));
         components = [{
           regions: [el],
           text:    el.getText(),
@@ -347,10 +331,13 @@ class Line {
       }
       runs.push(...components);
       return runs;
-    }, []);
+    };
+
+    const sortedElements = this.items.sort((a,b)=>a.left-b.left);
+    const runs = sortedElements.reduce(gatherRuns, []);
 
     this.runs   = runs;
-    this.styles = runs[0].styles;
+    this.styles = runs.filter(r=>!r.styles.smallCaps)[0].styles;
     this.text = this.runs.map(r=>r.text).join(" ");
   }
 
@@ -375,7 +362,7 @@ class Line {
     return styleMatcher(this.styles, regionStyles);
   }
 
-  getText(){
+  munge(text){
     let mungers = [
       (l) => l.replace(/‘‘/g, '“'),
       (l) => l.replace(/’’/g, '”'),
@@ -385,8 +372,29 @@ class Line {
         return l;
       },
     ];
-    let resultText = mungers.reduce((l, munger) => munger(l), this.text);
+    let resultText = mungers.reduce((l, munger) => munger(l), text);
     return resultText;
+  }
+
+  getText(){ return this.munge(this.text); }
+
+  addToParagraph(graf, options={}){
+    let textRuns = this.runs.map(runItem => {
+      let run = new docx.TextRun(this.munge(runItem.text));
+      if (runItem.styles.smallCaps) { run = run.smallCaps(); }
+      return run;
+    });
+    if (options.withBreak) { textRuns[textRuns.length-1] = textRuns[textRuns.length-1].break(); }
+    textRuns.forEach( r => graf.addRun(r) );
+    return graf;
+  }
+
+  getTextRuns() {
+    return this.runs.map(runItem => {
+      let run = new docx.TextRun(this.munge(runItem.text));
+      if (runItem.styles.smallCaps) { run = run.smallCaps(); }
+      return run;
+    });
   }
 }
 
@@ -427,6 +435,21 @@ class BillParagraph {
     } else {
       throw "line styles don't match this paragraph's styles.";
     }
+  }
+
+  addToDoc(doc) {
+    let graf = new docx.Paragraph();
+    this.lines.forEach((line, id) => {
+      let runs = line.getTextRuns();
+      // if this isn't the first line,
+      // add a break before appending this line.
+      // (the first line is separated by the paragraph break)
+      if (id > 0){ runs[0] = runs[0].break(); }
+      //runs[runs.length-1] = runs[runs.length-1].break();
+      runs.forEach(run => graf.addRun(run));
+    });
+    if (this.pageBreak) { graf = graf.pageBreak(); }
+    doc.addParagraph(graf);
   }
 }
 
