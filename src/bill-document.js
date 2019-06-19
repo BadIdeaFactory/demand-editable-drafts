@@ -241,10 +241,12 @@ class BillDocument {
 }
 
 class Line {
-  constructor(region){
-    this.region = region;
-    this.items  = region.items;
-    this.runs   = [];
+  constructor(region, options = {}){
+    this.region  = region;
+    this.options = options;
+    this.items   = region.items;
+    this.styles  = {};
+    this.runs    = [];
     this.analyze();
   }
 
@@ -257,28 +259,34 @@ class Line {
       capitalMatcher = /^([^a-z]|\W)*[A-Z]([^a-z]|\W)*$/; // strings w/ at least one capital 
     }
 
+    const getFontNames = (els) => els.map(el => el.item.fontName);
+    const getHeights = (els) => els.map(el => el.height);
     const isSmallCaps = (el, id, sorted)=>{
-      if (el.item.str.match(capitalMatcher)) {
-        let mainHeight, fontName;
-        if (id == 0) {
-          let heights = sorted.map(r=>r.item.height).filter(h=>!this.closeEnough(h,el.item.height));
-          let firstHeight = heights[0];
-          if (heights.every(h=>this.closeEnough(h,firstHeight))) { 
-            mainHeight = firstHeight; 
-          } else {
-            console.log("Found multiple font heights while looking for SmallCaps", heights);
-            mainHeight = firstHeight;
-          }
-          fontName = el.item.fontName;
-        } else {
-          let previousEl = sorted[id-1];
-          mainHeight = previousEl.height;
-          fontName = previousEl.item.fontName;
-        }
-        return ( mainHeight > el.height && el.item.fontName == fontName);
+      let mainHeight;
+      let fontName;
+      const elFonts = getFontNames(sorted);
+      const elHeights = getHeights(sorted).filter(h=> !this.closeEnough(h, el.height));
+      if (elFonts.every(name => elFonts[0])) { 
+        fontName = elFonts[0]; 
       } else {
-        return false;
+        console.log(sorted);
+        debugger;
+        throw "Assessing SmallCaps, but found multiple fonts";
       }
+      if (elHeights.every(h => this.closeEnough(h, elHeights[0]))) { 
+        mainHeight = elHeights[0];
+      } else {
+        console.log(sorted);
+        debugger;
+        throw "Assessing SmallCaps, but found multiple font sizes";
+      }
+      let result = (
+        mainHeight > el.height &&
+        el.item.fontName == fontName &&
+        el.item.str.match(capitalMatcher)
+      );
+      //if (result) { console.log(el.item.str); }
+      return result;
     };
 
     const gatherRuns = (runs, el, id, sorted)=>{
@@ -288,40 +296,47 @@ class Line {
       //if (id > 0 && !isSmallCaps(el, id, sorted)) { els.push(" "); }
 
       let components = [];
-      const elIsSmallCaps = isSmallCaps(el, id, sorted);
-      if (id == 0 && el.item.str.toUpperCase() == el.item.str) { 
-        //console.log(el.item.str, elIsSmallCaps);
-        //debugger;
-      }
-      if (id > 0 && elIsSmallCaps) {
-        // split the previousEl, and merge the capital with this run
-        // and mark this run as small caps.
+      // smallCaps have to be noted for styling.
+      if (isSmallCaps(el, id, sorted)) {
         let previous = runs.pop();
-        const matches = previous.text.match(/^(.*)\b(\w+)$/u);
-        let [matchText, previousText, dangler] = matches;
-        let text = `${dangler}${el.item.str.toLocaleLowerCase()}`;
-        if (sorted[id+1].item.str.match(/^\w/)) { text += ' '; }
+        let danglerMatch;
+        if (previous) { danglerMatch = previous.text.match(/^(.*)\b(\w+)$/u); }
+        // if the previous element has a dangling capital letter for the smallCaps
+        // run, we need to resegment the previous run to move the capital letter
+        // into the smallCaps run.
+        if (danglerMatch && !previous.styles.smallCaps) {
+          let [matchText, previousText, dangler] = danglerMatch;
+  
+          let text = `${dangler}${el.item.str.toLocaleLowerCase()}`;
+          if (sorted[id+1].item.str.match(/^\w/)) { text += ' '; }
+  
+          previous.text = previousText;
+          let smallCapsRun = {
+            regions: [...previous.regions, el],
+            text:    text,
+            styles:  {},
+          };
 
-        previous.text = previousText;
-        let smallCapsRun = {
-          regions: [...previous.regions, el],
-          text:    text,
-          styles:  {},
-        };
-        Object.keys(previous.styles).forEach(key => smallCapsRun.styles[key] = previous.styles[key]);
-        smallCapsRun.styles.smallCaps = true;
-        previous.styles.removedDanglingSmallCap = true;
-        if (previous.text.length > 0) { components.push(previous); }
-        components.push(smallCapsRun);
-      } else if (elIsSmallCaps) {
-        const text = `${el.item.str.toLocaleLowerCase()} `;
-        const styles = this.extractStyle(el);
-        styles.smallCaps = true;
-        components = [{
-          regions: [el],
-          text:    text,
-          styles:  styles,
-        }];
+          // match the styles for this run to the previous one.
+          Object.keys(previous.styles).forEach(key => smallCapsRun.styles[key] = previous.styles[key]);
+          // and note the smallCaps and the edit on the previous run.
+          smallCapsRun.styles.smallCaps = true;
+          previous.styles.removedDanglingSmallCap = true;
+          // if after the edit, the previous run has no text, don't push it.
+          if (previous.text.length > 0) { components.push(previous); }
+          // but we'll always need the smallCaps run.
+          components.push(smallCapsRun);  
+        } else {
+          const text = `${el.item.str.toLocaleLowerCase()} `;
+          const styles = this.extractStyle(el);
+          styles.smallCaps = true;
+          if (previous) { components.push(previous); }
+          components.push({
+            regions: [el],
+            text:    text,
+            styles:  styles,
+          });  
+        }
       } else {
         components = [{
           regions: [el],
@@ -329,6 +344,7 @@ class Line {
           styles:  this.extractStyle(el),
         }];
       }
+
       runs.push(...components);
       return runs;
     };
