@@ -227,11 +227,12 @@ class BillDocument {
 
     const headerLines = billHeader.reduce(processSection, doc);
 
+    const numberingSpacing = billData.mainMargins.sort()[0];
     // start the main section.
     doc.addSection({
       lineNumberCountBy: 1,
       lineNumberRestart: docx.LineNumberRestartFormat.NEW_PAGE,
-      lineNumberDistance: 240,
+      lineNumberDistance: Utils.pixelsToTWIPs(numberingSpacing),
     });
     const mainLines = billMain.reduce(processSection, doc);
 
@@ -265,7 +266,7 @@ class Line {
       let mainHeight;
       let fontName;
       const elFonts = getFontNames(sorted);
-      const elHeights = getHeights(sorted).filter(h=> !this.closeEnough(h, el.height));
+      const elHeights = getHeights(sorted).filter(h=> !Utils.closeEnough(h, el.height));
       if (elFonts.every(name => elFonts[0])) { 
         fontName = elFonts[0]; 
       } else {
@@ -273,7 +274,7 @@ class Line {
         debugger;
         throw "Assessing SmallCaps, but found multiple fonts";
       }
-      if (elHeights.every(h => this.closeEnough(h, elHeights[0]))) { 
+      if (elHeights.every(h => Utils.closeEnough(h, elHeights[0]))) { 
         mainHeight = elHeights[0];
       } else {
         console.log(sorted);
@@ -369,10 +370,8 @@ class Line {
     return this.styles;
   }
 
-  closeEnough(a, b){ return (Math.abs(a - b) < 0.001); }
-
   styleMatches(region) {
-    const styleMatcher = (a,b) => (this.closeEnough(a.fontSize, b.fontSize) && a.fontName == b.fontName);
+    const styleMatcher = (a,b) => (Utils.closeEnough(a.fontSize, b.fontSize) && a.fontName == b.fontName);
     const regionStyles = this.extractStyle(region);
     return styleMatcher(this.styles, regionStyles);
   }
@@ -441,8 +440,7 @@ class BillParagraph {
 
   styleMatches(line) {
     if (this.lines.length > 0) {
-      const closeEnough  = (a,b) => (Math.abs(a - b) < 0.001);
-      const styleMatcher = (a,b) => (closeEnough(a.fontSize, b.fontSize) && a.fontName == b.fontName);
+      const styleMatcher = (a,b) => (Utils.closeEnough(a.fontSize, b.fontSize) && a.fontName == b.fontName);
       return styleMatcher(this.styles, line.getStyles());
     } else {
       return true;
@@ -502,5 +500,17 @@ class BillPage {
     return linearize(this.region);
   }
 }
+
+const Utils = {
+  pixelsToPoints: (px) => {
+    const pixelsPerInch = (96*window.devicePixelRatio);
+    // fontSize is measured in pixels w/ a a 72dpi assumption
+    return px * (72/pixelsPerInch);
+  },
+  pixelsToTWIPs: (px) =>{
+    return Utils.pixelsToPoints(px) * 20;
+  },
+  closeEnough: (a, b) => { return (Math.abs(a - b) < 0.001); },
+};
 
 export default BillDocument;
