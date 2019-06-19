@@ -209,7 +209,6 @@ class BillDocument {
         };
 
         const lines = region.groupItems();
-        let otherLines = lines.map(l=> new Line(l));
         const paragraphs = [];
         lines.reduce((grafs, line, id, lines) => {
           let currentGraf = grafs[grafs.length-1];
@@ -232,9 +231,25 @@ class BillDocument {
           }
           return grafs;
         }, paragraphs);
+//-----------------------------------
+        let otherLines = lines.map(l=> new Line(l));
+        let otherParagraphs = [];
+        otherLines.reduce((grafs, line, id, lines) => {
+          let currentGraf = grafs[grafs.length-1];
+          if (currentGraf && line.styleMatches(currentGraf)) {
+            currentGraf.appendLine(line);
+          } else {
+            let newGraf = new BillChunk();
+            newGraf.appendLine(line);
+            grafs.push(newGraf);
+          }
+          return grafs;
+        }, otherParagraphs);
 
         if ( inputLines[id+1] == "<PAGEBREAK/>" ) {
           let lastGraf = paragraphs[paragraphs.length-1];
+          let otherLastGraf = otherParagraphs[otherParagraphs.length-1];
+          otherLastGraf.pageBreak = true;
           lastGraf.data = lastGraf.data.pageBreak();
         }
 
@@ -243,6 +258,7 @@ class BillDocument {
           doc.paragraphs.push(paragraphs);
           doc.docx = result;
         }
+        debugger;
       }
       return result;
     };
@@ -254,9 +270,6 @@ class BillDocument {
 
     let doc =  new docx.Document();
 
-    doc.addSection({
-      
-    });
     const headerLines = billHeader.reduce(processSection, doc);
 
     // start the main section.
@@ -313,20 +326,23 @@ class Line {
         let [matchText, previousText, dangler] = matches;
         let text = `${dangler}${el.item.str.toLocaleLowerCase()}`;
 
-        previous.styles.removedDanglingSmallCap = true;
         previous.text = previousText;
         let smallCapsRun = {
           regions: [...previous.regions, el],
           text:    text,
-          styles:  { smallcaps: true },
+          styles:  {},
         };
+        Object.keys(previous.styles).forEach(key => smallCapsRun.styles[key] = previous.styles[key]);
+        smallCapsRun.styles.smallCaps = true;
+        previous.styles.removedDanglingSmallCap = true;
         if (previous.text.length > 0) { components.push(previous); }
         components.push(smallCapsRun);
       } else {
+        console.log(this.extractStyle(el));
         components = [{
           regions: [el],
           text:    el.getText(),
-          styles:  {},
+          styles:  this.extractStyle(el),
         }];
       }
       runs.push(...components);
@@ -334,16 +350,21 @@ class Line {
     }, []);
 
     this.runs   = runs;
-    this.styles = {};
+    this.styles = runs[0].styles;
     this.text = this.runs.map(r=>r.text).join(" ");
   }
 
-  extractStyle(region){
-    return { fontSize: region.height, fontName: regionegion.item.fontName, };
+  extractStyle(obj){
+    if (obj instanceof Region && obj.item) {
+      return { fontSize: obj.height, fontName: obj.item.fontName, };
+    } else {
+      return obj.getStyles();
+    }
   }
 
   getStyles(){
-    return this.items.map(itemRegion=>this.extractStyle(itemRegion));
+    //return this.items.map(itemRegion=>this.extractStyle(itemRegion));
+    return this.styles;
   }
 
   closeEnough(a, b){ return (Math.abs(a - b) < 0.001); }
@@ -384,16 +405,24 @@ class BillChunk {
     return this.styles;
   }
 
+  getStyles() {
+    return this.styles;
+  }
+
   styleMatches(line) {
-    const closeEnough  = (a,b) => (Math.abs(a - b) < 0.001);
-    const styleMatcher = (a,b) => (closeEnough(a.fontSize, b.fontSize) && a.fontName == b.fontName);
-    const lineStyles = line.getStyles();
-    return lineStyles.some(lineStyle => styleMatcher(this.styles, lineStyle));
+    if (this.lines.length > 0) {
+      const closeEnough  = (a,b) => (Math.abs(a - b) < 0.001);
+      const styleMatcher = (a,b) => (closeEnough(a.fontSize, b.fontSize) && a.fontName == b.fontName);
+      return styleMatcher(this.styles, line.getStyles());
+    } else {
+      return true;
+    }
   }
 
   appendLine(line, options={}) {
     if (this.styleMatches(line)){
-      this.text.push(line.region.getText({line: this.mungeLine}));
+      if (this.lines.length == 0) { this.setStyle(line.getStyles()); }
+      this.text.push(line.getText());
       this.lines.push(line);
     } else {
       throw "line styles don't match this paragraph's styles.";
