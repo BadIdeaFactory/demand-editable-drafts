@@ -250,6 +250,15 @@ class Region {
 
     let items = this.items.sort((a,b)=>b.height-a.height);
     let lines = items.reduce(groupByLine, []);
+    lines.forEach(line => {
+      const leftmost = line.items.sort((a,b)=>a.left-b.left)[0];
+      line.setBounds({
+        top: line.top,
+        bottom: line.bottom,
+        left: leftmost.left,
+        right: line.right,
+      }, line.items);
+    });
     const orderByTopLeft = (a, b) => {
       // if the y coordinates are the same
       if (a.top == b.top) {

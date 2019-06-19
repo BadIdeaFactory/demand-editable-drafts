@@ -112,8 +112,9 @@ class BillDocument {
         }
         state.currentPage.main.path = path;
         state.currentPage.main.regions.push(region);
-        state.sections.main.push(childRegions.right);
         state.currentPage.main.margin = calculateBillTextMargins(region);
+        childRegions.right.margin = state.currentPage.main.margin;
+        state.sections.main.push(childRegions.right);
         childRegions.right.regions = {}; // disregard partitions inside of main region.
         state.currentPage.main.text.push(childRegions.right.getText({line:this.mungeLine}));
         state.mainMargins.push(state.currentPage.main.margin);
@@ -188,11 +189,15 @@ class BillDocument {
   // in a section (the bill header, or the bill main) to the document.
   //
   // It needs to 
-  const processSection = (doc, region, id, inputLines) => {
+  const processSection = (section, region, id, inputLines) => {
       // set up a debugging mode.
-      let result = (doc instanceof docx.Document) ? doc : doc.docx;
+      const doc = section.doc;
       if ( region instanceof Region ){
-        const lines = region.groupItems().map(l=> new Line(l));
+        const leftEdge = region.left;
+        const lines = region.groupItems().map(l=>{ 
+          let opts = (section.name == "main") ? {margin: l.left - leftEdge} : {};
+          return new Line(l, opts);
+        });
         const paragraphs = lines.reduce((grafs, line) => {
           let currentGraf = grafs[grafs.length-1];
           if (currentGraf && line.styleMatches(currentGraf)) {
@@ -214,8 +219,10 @@ class BillDocument {
         if (!(doc instanceof docx.Document)) { 
           doc.paragraphs.push(...paragraphs);
         }
+        console.log(lines.map(l=>l.styles.margin));
+        debugger;
       }
-      return result;
+      return section;
     };
     
     const billData = this.process();
@@ -225,16 +232,22 @@ class BillDocument {
 
     let doc =  new docx.Document();
 
-    const headerLines = billHeader.reduce(processSection, doc);
+    const headerLines = billHeader.reduce(processSection, 
+      { name:"header", doc: doc });
 
-    const numberingSpacing = billData.mainMargins.sort()[0];
+    let margins = billMain.reduce((arr, r)=>{
+      if (r instanceof Region) { arr.push(r.margin); }
+      return arr;
+    }, []);
+    const numberingSpacing = margins.sort()[0];
     // start the main section.
     doc.addSection({
       lineNumberCountBy: 1,
       lineNumberRestart: docx.LineNumberRestartFormat.NEW_PAGE,
       lineNumberDistance: Utils.pixelsToTWIPs(numberingSpacing),
     });
-    const mainLines = billMain.reduce(processSection, doc);
+    const mainLines = billMain.reduce(processSection, 
+      { name:"main", doc: doc });
 
     debugger;
     return doc;
@@ -246,7 +259,9 @@ class Line {
     this.region  = region;
     this.options = options;
     this.items   = region.items;
-    this.styles  = {};
+    this.styles  = {
+      margin: options.margin,
+    };
     this.runs    = [];
     this.analyze();
   }
@@ -353,7 +368,8 @@ class Line {
     const runs = sortedElements.reduce(gatherRuns, []);
 
     this.runs   = runs;
-    this.styles = runs.filter(r=>!r.styles.smallCaps)[0].styles;
+    let runStyles = runs.filter(r=>!r.styles.smallCaps)[0].styles;
+    Object.keys(runStyles).forEach(key => this.styles[key] = runStyles[key]);
     this.text = this.runs.map(r=>r.text).join(" ");
   }
 
