@@ -200,7 +200,7 @@ class BillDocument {
         });
         const paragraphs = lines.reduce((grafs, line) => {
           let currentGraf = grafs[grafs.length-1];
-          if (currentGraf && line.styleMatches(currentGraf)) {
+          if (currentGraf && line.stylesMatch(currentGraf)) {
             currentGraf.appendLine(line);
           } else {
             let newGraf = new BillParagraph();
@@ -219,8 +219,6 @@ class BillDocument {
         if (!(doc instanceof docx.Document)) { 
           doc.paragraphs.push(...paragraphs);
         }
-        console.log(lines.map(l=>l.styles.margin));
-        debugger;
       }
       return section;
     };
@@ -386,7 +384,7 @@ class Line {
     return this.styles;
   }
 
-  styleMatches(region) {
+  stylesMatch(region) {
     const styleMatcher = (a,b) => (Utils.closeEnough(a.fontSize, b.fontSize) && a.fontName == b.fontName);
     const regionStyles = this.extractStyle(region);
     return styleMatcher(this.styles, regionStyles);
@@ -435,6 +433,20 @@ class Line {
   }
 }
 
+// Assume that Paragraphs start with an indentation.
+// So the first line added to the paragraph should have some left margin.
+// The next line should have a left margin that is one fewer indent.
+//
+// All in all the bill parser will need to look at the current line,
+// the previous line, and the next line in order to determine whether or not
+// this paragraph is part of a new paragraph or not.
+// This lookahead may span pages as well.
+//
+// A new Paragraph is a change in one of:
+//    - A change in indenation
+//    - A change in style
+//
+// The definition of what indentation matches a paragraph depends on the section and style.
 class BillParagraph {
   constructor() {
     this.setStyle();
@@ -454,7 +466,7 @@ class BillParagraph {
     return this.styles;
   }
 
-  styleMatches(line) {
+  stylesMatch(line) {
     if (this.lines.length > 0) {
       const styleMatcher = (a,b) => (Utils.closeEnough(a.fontSize, b.fontSize) && a.fontName == b.fontName);
       return styleMatcher(this.styles, line.getStyles());
@@ -464,7 +476,7 @@ class BillParagraph {
   }
 
   appendLine(line, options={}) {
-    if (this.styleMatches(line)){
+    if (this.stylesMatch(line)){
       if (this.lines.length == 0) { this.setStyle(line.getStyles()); }
       this.text.push(line.getText());
       this.lines.push(line);
