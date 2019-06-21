@@ -177,7 +177,17 @@ class Region {
     let lowestTop     = Math.max(this.top, region.top);
     let highestBottom = Math.min(this.bottom, region.bottom);
     // and then make sure that the boundaries overlap.
-    return furthestLeft < nearestRight && lowestTop < highestBottom;
+    const intersectsHorizontally = furthestLeft < nearestRight;
+    const intersectsVertically   = lowestTop < highestBottom;
+    let result;
+    if (options.onlyVertically) {
+      result = intersectsVertically;
+    } else if (options.onlyHorizontally) {
+      result = intersectsHorizontally;
+    } else {
+      result = intersectsHorizontally && intersectsVertically;
+    }
+    return result;
   }
 
   contains(region){
@@ -198,10 +208,6 @@ class Region {
       });
     }
     return result;
-  }
-
-  overlapsVertically(candidate){ 
-    return !(this.bottom < candidate.top || this.top > candidate.bottom);
   }
 
   drawOnto(context, style={}){

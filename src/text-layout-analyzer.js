@@ -242,19 +242,12 @@ class TextLayoutAnalyzer {
 
     let merge = (caps) => {
       let capsSpaceWidth = this.styles[caps.item.fontName].spaceWidth;
-      let sameLine = (a, b) => {
-        let extendedToBorder = new Region({ 
-          top: a.top, bottom: a.bottom, 
-          left: 0, right: this.context.canvas.width
-        });
-        return extendedToBorder.intersects(b);
-      };
-
-      let capsLineRegions = regionItems.filter((region) => {
+      const sameLine = (a, b) => a.intersects(b, {onlyVertically: true});
+      const capsLineRegions = regionItems.filter((region) => {
         return ( region.item.fontName == caps.item.fontName && sameLine(caps, region));
       });
 
-      let capsLineBoundaries = capsLineRegions.reduce((lineBounds, region) => {
+      const capsLineBoundaries = capsLineRegions.reduce((lineBounds, region) => {
         return {
           top    : (lineBounds.top)    ? Math.min(lineBounds.top, region.top)       : region.top,
           bottom : (lineBounds.bottom) ? Math.max(lineBounds.bottom, region.bottom) : region.bottom,
@@ -262,7 +255,7 @@ class TextLayoutAnalyzer {
           right  : (lineBounds.right)  ? Math.max(lineBounds.right, region.right)   : region.right,
         };
       }, {});
-      let capsLine = new Region(capsLineBoundaries, capsLineRegions);
+      const capsLine = new Region(capsLineBoundaries, capsLineRegions);
       capsLine.hasSmallCaps = true;
       if (!capsLineRegions.every(region=>capsLine.contains(region))) { debugger; }
       capsLine.drawOnto(this.context);
@@ -373,7 +366,7 @@ class TextLayoutAnalyzer {
             leftItems.forEach( l => {
               rightItems.forEach(r => {
                 // we should memoize these the overlap results somewhere.
-                if (l.overlapsVertically(r)) { intersections.push([l,r]); }
+                if (l.intersects(r, {onlyVertically: true})) { intersections.push([l,r]); }
               });
             });
             let highestIntersection = 0;
