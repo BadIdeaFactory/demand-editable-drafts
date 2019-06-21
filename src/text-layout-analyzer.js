@@ -505,28 +505,6 @@ class TextLayoutAnalyzer {
     this.region.setItems(itemRegions);
     this.regions = this.region.partitionByObstacles();
   }
-
-  async dumpDocX() {
-    let doc = new docx.Document();
-    let paragraph = new docx.Paragraph(this.dumpText());
-    doc.addParagraph(paragraph);
-
-    let packer = new docx.Packer();
-    let docBuffer = await packer.toBuffer(doc);
-    let blob = new Blob(
-      [docBuffer], 
-      {type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'}
-    );
-    FileSaver.saveAs(blob, "derp.docx");
-  }
-
-  appendTextToDocX(doc, options={}) {
-    let text = this.dumpText();
-    console.log(text);
-    let paragraph = new docx.Paragraph(text);
-    if (!options.noPageBreak){ paragraph.pageBreakBefore(); }
-    doc.addParagraph(paragraph);
-  }
 }
 
 export default TextLayoutAnalyzer;
