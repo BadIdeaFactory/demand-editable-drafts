@@ -169,12 +169,15 @@ class Region {
     );
   }
 
-  intersects(region) {
-    let x1 = Math.max(this.left, region.left);
-    let x2 = Math.min(this.right, region.right);
-    let y1 = Math.max(this.top, region.top);
-    let y2 = Math.min(this.bottom, region.bottom);
-    return x1 < x2 && y1 < y2;
+  intersects(region, options={}) {
+    // We can rely on the fact that each region's `right` > `left` and `bottom` > `top`.
+    // So, we can grab the boundaries closest to the opposite edge for each dimension
+    let furthestLeft  = Math.max(this.left, region.left);
+    let nearestRight  = Math.min(this.right, region.right);
+    let lowestTop     = Math.max(this.top, region.top);
+    let highestBottom = Math.min(this.bottom, region.bottom);
+    // and then make sure that the boundaries overlap.
+    return furthestLeft < nearestRight && lowestTop < highestBottom;
   }
 
   contains(region){
