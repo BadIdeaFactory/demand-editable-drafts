@@ -203,10 +203,11 @@ class BillDocument {
       // set up a debugging mode.
       const doc = section.doc;
       if ( region instanceof Region ){
-        const leftEdge = region.left - (region.margin || 0); // margin moves the edge back leftward.
+        let leftEdge = (region.left - (region.margin || 0));
+        // margin accounts for some of the whitespace so move the left edge to the right.
+        if (section.name == "header") { leftEdge += Utils.defaultMargin;}
         const lines = region.groupItems().map(l=>{ 
           const leftMargin = l.left - leftEdge;
-          console.log(leftMargin);
           return new BillLine(l, {margin: leftMargin, fonts: this.commonObjs._objs });
         });
         const paragraphs = lines.reduce((grafs, line) => {
