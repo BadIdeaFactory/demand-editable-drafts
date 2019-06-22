@@ -24,7 +24,7 @@ class BillParagraph {
 
   setStyle(style){
     const newStyles = {};
-    const styleKeys = ['fontSize', 'fontName', 'leftMargin'];
+    const styleKeys = ['fontSize', 'fontName', 'margin'];
     if (style) { styleKeys.forEach(key => newStyles[key] = style[key]); }
     this.styles = newStyles;
     return this.styles;
@@ -65,6 +65,11 @@ class BillParagraph {
       runs.forEach(run => graf.addRun(run));
     });
     if (this.pageBreak) { graf = graf.pageBreak(); }
+    if (this.styles.margin && this.styles.margin > 0) {
+      let twips = Utils.pixelsToTWIPs(this.styles.margin);
+      console.log(`Has margin! ${this.styles.margin} | ${twips}`);
+      graf = graf.indent({left: twips});
+    }
     doc.addParagraph(graf.spacing({line: 240*2}));
   }
 }

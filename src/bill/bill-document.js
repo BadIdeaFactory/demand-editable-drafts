@@ -194,7 +194,7 @@ class BillDocument {
   dumpDocX(options={}) {
     // notes about docx format.
     //   - all measurements in OpenOfficeXML is in TWIPs (twentieth of a point)
-    
+
     // `processSection` is a reducer that will append all of the elements
     // in a section (the bill header, or the bill main) to the document.
     //
@@ -203,14 +203,15 @@ class BillDocument {
       // set up a debugging mode.
       const doc = section.doc;
       if ( region instanceof Region ){
-        const leftEdge = region.left;
+        const leftEdge = region.left - (region.margin || 0); // margin moves the edge back leftward.
         const lines = region.groupItems().map(l=>{ 
-          let opts = (section.name == "main") ? {margin: l.left - leftEdge} : {};
-          return new BillLine(l, opts);
+          const leftMargin = l.left - leftEdge;
+          console.log(leftMargin);
+          return new BillLine(l, {margin: leftMargin});
         });
         const paragraphs = lines.reduce((grafs, line) => {
           let currentGraf = grafs[grafs.length-1];
-          if (currentGraf && line.stylesMatch(currentGraf)) {
+          if (currentGraf && line.stylesMatch(currentGraf) && false) {
             currentGraf.appendLine(line);
           } else {
             let newGraf = new BillParagraph();
@@ -247,13 +248,14 @@ class BillDocument {
       if (r instanceof Region) { arr.push(r.margin); }
       return arr;
     }, []);
+
     const numberingSpacing = margins.sort()[0];
     // start the main section.
-    doc.addSection({
-      lineNumberCountBy: 1,
-      lineNumberRestart: docx.LineNumberRestartFormat.NEW_PAGE,
-      lineNumberDistance: Utils.pixelsToTWIPs(numberingSpacing),
-    });
+    //doc.addSection({
+    //  lineNumberCountBy: 1,
+    //  lineNumberRestart: docx.LineNumberRestartFormat.NEW_PAGE,
+    //  lineNumberDistance: Utils.pixelsToTWIPs(numberingSpacing),
+    //});
     const mainLines = billMain.reduce(processSection, 
       { name:"main", doc: doc });
 
