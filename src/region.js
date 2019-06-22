@@ -53,6 +53,16 @@ class Region {
 
   setItems(candidates) {
     this.items = candidates.filter(el => this.intersects(el));
+    const getStyles = (fonts, obj) => {
+      if (obj instanceof Region && obj.fonts.length > 0){
+        obj.fonts.forEach(font => fonts.add(font));
+      } else {
+        const fontName = (obj.item)? obj.item.fontName : obj.fontName;
+        fonts.add(fontName);
+      }
+      return fonts;
+    };
+    this.fonts = this.items.reduce(getStyles, new Set());
   }
 
   compareItems(other) {
