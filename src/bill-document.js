@@ -24,17 +24,23 @@ class BillDocument {
 
   async calculateLayout(options={}) {
     if (options.force || this._pages.length == 0) {
-      let pages = [];
+      const pages = [];
       for (let pageNumber = 1; pageNumber <= this.pageCount ; pageNumber++) {
-        let page = await this.getPage(pageNumber);
-        let viewport = page.getViewport({scale:this.scale});
-        let canvas = document.createElement('canvas');
+        const page = await this.getPage(pageNumber);
+        const viewport = page.getViewport({scale:this.scale});
+        const canvas = document.createElement('canvas');
         canvas.height = viewport.height;
         canvas.width  = viewport.width;
-        let context = canvas.getContext('2d');
-  
-        let textItems = await page.getTextContent({normalizeWhiteSpace: true});
-        let analyzer = new TextLayoutAnalyzer(textItems, viewport, context);
+        const context = canvas.getContext('2d');
+
+        // commonObjs is where the fonts live.
+        if (!this.commonObjs) { this.commonObjs = page.commonObjs; } else {
+          if (this.commonObjs != page.commonObjs) { 
+            console.log(`Uhoh, Common Objects aren't the same on Page ${pageNumber}`);
+          }
+        }
+        const textItems = await page.getTextContent({normalizeWhiteSpace: true});
+        const analyzer = new TextLayoutAnalyzer(textItems, viewport, context);
         pages.push(analyzer.calculateLayout());
       }
       this._pages = pages.map(page=>new BillPage(page));
@@ -502,8 +508,10 @@ class BillParagraph {
 }
 
 class BillPage {
-  constructor(region){
-    this.region = region;
+  constructor(analyzer){
+    this.layout = analyzer;
+    this.fonts  = analyzer.styles;
+    this.region = analyzer.region;
     this.initializeSections();
   }
 

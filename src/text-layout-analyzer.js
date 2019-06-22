@@ -64,7 +64,7 @@ class TextLayoutAnalyzer {
       this.groupRegions();
       this.calculatedLayout = true;
     }
-    return this.region;
+    return this;
   }
 
   // Cribbed from pdfjs utils

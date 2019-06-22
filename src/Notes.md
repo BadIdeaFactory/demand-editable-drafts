@@ -112,6 +112,10 @@ https://github.com/mozilla/pdf.js/issues/8588
 https://developer.mozilla.org/en-US/docs/Web/API/Window/devicePixelRatio
 https://stackoverflow.com/questions/21719393/how-to-improve-display-quality-in-pdf-js
 
+#### Fonts
+
+Turns out that PDF.js provides access to font data.  This is also fun: http://blynken.blogspot.com/2009/11/health-care-bill-geek-style.html
+
 #### Congressional Style
 
 ##### Paragraphs
