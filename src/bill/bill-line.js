@@ -9,6 +9,7 @@ class BillLine {
     this.items   = region.items;
     this.styles  = {
       margin: options.margin,
+      fonts:  options.fonts,
     };
     this.runs    = [];
     this.analyze();
@@ -156,30 +157,26 @@ class BillLine {
 
   getText(){ return this.munge(this.text); }
 
-  addToParagraph(graf, options={}){
-    let textRuns = this.runs.map(runItem => {
-      let run = new docx.TextRun(this.munge(runItem.text));
-      if (runItem.styles.smallCaps) { run = run.smallCaps(); }
-      return run;
-    });
-    if (options.withBreak) { textRuns[textRuns.length-1] = textRuns[textRuns.length-1].break(); }
-    textRuns.forEach( r => graf.addRun(r) );
-    return graf;
-  }
-
-  _setDocXStyles(run){
-    const pixelsPerInch = (96*window.devicePixelRatio);
-    // fontSize is measured in pixels w/ a a 72dpi assumption
-    let fontPoints = this.styles.fontSize * (72/pixelsPerInch);
-    return run.size(fontPoints*2).font('Times');
-  }
-
   getTextRuns() {
-    return this.runs.map(runItem => {
+    const createTextRun = (runItem) => {
       let run = new docx.TextRun(this.munge(runItem.text));
+
       if (runItem.styles.smallCaps) { run = run.smallCaps(); }
-      return this._setDocXStyles(run);
-    });
+
+      if (this.styles.fonts) {
+        const fontData = this.styles.fonts[runItem.styles.fontName].data;
+        const realFontName = fontData.name;
+        if (realFontName.match(/italic/i)) { run = run.italics(); }
+        if (realFontName.match(/bold/i)) { run = run.bold(); }
+      }
+
+      // fontSize is measured in pixels w/ a a 72dpi assumption
+      const fontPoints = Utils.pixelsToPoints(this.styles.fontSize);
+      run = run.size(fontPoints*2).font('Times');
+      return run;
+    };
+
+    return this.runs.map(createTextRun);
   }
 }
 

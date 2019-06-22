@@ -207,7 +207,7 @@ class BillDocument {
         const lines = region.groupItems().map(l=>{ 
           const leftMargin = l.left - leftEdge;
           console.log(leftMargin);
-          return new BillLine(l, {margin: leftMargin});
+          return new BillLine(l, {margin: leftMargin, fonts: this.commonObjs._objs });
         });
         const paragraphs = lines.reduce((grafs, line) => {
           let currentGraf = grafs[grafs.length-1];

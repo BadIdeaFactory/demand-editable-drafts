@@ -67,7 +67,6 @@ class BillParagraph {
     if (this.pageBreak) { graf = graf.pageBreak(); }
     if (this.styles.margin && this.styles.margin > 0) {
       let twips = Utils.pixelsToTWIPs(this.styles.margin);
-      console.log(`Has margin! ${this.styles.margin} | ${twips}`);
       graf = graf.indent({left: twips});
     }
     doc.addParagraph(graf.spacing({line: 240*2}));
