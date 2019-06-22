@@ -27,7 +27,7 @@
   export let layoutAnalyzer;
   
   import TextLayoutAnalyzer from './text-layout-analyzer.js';
-  import BillDocument from './bill-document.js';
+  import BillDocument from './bill/bill-document.js';
   import docx from 'docx';
   import FileSaver from 'file-saver';
 

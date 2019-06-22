@@ -1,6 +1,6 @@
-import TextLayoutAnalyzer from './text-layout-analyzer.js';
+import TextLayoutAnalyzer from '../text-layout-analyzer.js';
 import docx from 'docx';
-import Region from './region.js';
+import Region from '../region.js';
 
 // This class wraps and controls a `pdfjs` document and it's canvas.
 class BillDocument {
