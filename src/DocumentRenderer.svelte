@@ -49,11 +49,8 @@
   }
 
   export async function dumpDocX() {
-    let doc = billAnalyzer.dumpDocX();
-    let packer = new docx.Packer();
-    let docBuffer = await packer.toBuffer(doc);
-    let blob = new Blob(
-      [docBuffer], 
+    const blob = new Blob(
+      [await billAnalyzer.dumpDocX()], 
       {type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'}
     );
     FileSaver.saveAs(blob, fileName.replace(/pdf$/, 'docx'));

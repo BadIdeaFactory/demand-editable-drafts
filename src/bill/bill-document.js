@@ -191,7 +191,7 @@ class BillDocument {
   // This method takes the flattened list of regions created
   // as part of `this.process` and maps those inputs into
   // a DocX document.
-  dumpDocX(options={}) {
+  async dumpDocX(options={}) {
     // notes about docx format.
     //   - all measurements in OpenOfficeXML is in TWIPs (twentieth of a point)
 
@@ -252,16 +252,19 @@ class BillDocument {
 
     const numberingSpacing = margins.sort()[0];
     // start the main section.
-    //doc.addSection({
-    //  lineNumberCountBy: 1,
-    //  lineNumberRestart: docx.LineNumberRestartFormat.NEW_PAGE,
-    //  lineNumberDistance: Utils.pixelsToTWIPs(numberingSpacing),
-    //});
+    doc.addSection({
+      lineNumberCountBy: 1,
+      lineNumberRestart: docx.LineNumberRestartFormat.NEW_PAGE,
+      lineNumberDistance: Utils.pixelsToTWIPs(numberingSpacing),
+    });
     const mainLines = billMain.reduce(processSection, 
       { name:"main", doc: doc });
 
+    const docStyles = new docx.Styles();
+
     debugger;
-    return doc;
+    const packer = new docx.Packer();
+    return packer.toBuffer(doc, docStyles);
   }
 }
 
