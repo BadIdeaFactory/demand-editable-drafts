@@ -14,6 +14,7 @@ class BillDocument {
     this.pageCount         = this.pdf.numPages;
     this.currentPageNumber = 1;
     this._pages = [];
+    this.commonObjs = {};
   }
 
   async init() {
@@ -37,17 +38,17 @@ class BillDocument {
         canvas.width  = viewport.width;
         const context = canvas.getContext('2d');
 
-        // commonObjs is where the fonts live.
-        if (!this.commonObjs) { this.commonObjs = page.commonObjs; } else {
-          if (this.commonObjs != page.commonObjs) { 
-            console.log(`Uhoh, Common Objects aren't the same on Page ${pageNumber}`);
-          }
-        }
         const textItems = await page.getTextContent({normalizeWhiteSpace: true});
         const analyzer = new TextLayoutAnalyzer(textItems, viewport, context);
         pages.push(analyzer.calculateLayout());
+        // commonObjs is where the fonts live.
+        // page.commonObjs isn't populated unless you get the operator list.
+        await page.getOperatorList();
+        Object.keys(page.commonObjs._objs).forEach((key) => {
+          this.commonObjs[key] = page.commonObjs._objs[key];
+        });
       }
-      this._pages = pages.map(page=>new BillPage(page));
+      this._pages = pages.map(p=>new BillPage(p));
     }
     return this._pages;
   }
@@ -208,7 +209,7 @@ class BillDocument {
         if (section.name == "header") { leftEdge += Utils.defaultMargin;}
         const lines = region.groupItems().map(l=>{ 
           const leftMargin = l.left - leftEdge;
-          return new BillLine(l, {margin: leftMargin, fonts: this.commonObjs._objs });
+          return new BillLine(l, {margin: leftMargin, fonts: this.commonObjs });
         });
         const paragraphs = lines.reduce((grafs, line) => {
           let currentGraf = grafs[grafs.length-1];
@@ -262,7 +263,6 @@ class BillDocument {
 
     const docStyles = new docx.Styles();
 
-    debugger;
     const packer = new docx.Packer();
     return packer.toBuffer(doc, docStyles);
   }
