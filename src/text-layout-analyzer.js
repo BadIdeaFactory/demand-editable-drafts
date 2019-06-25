@@ -59,8 +59,7 @@ class TextLayoutAnalyzer {
   calculateLayout(options={}) {
     if (!this.calculatedLayout || options.force){
       this.calculateStyles();
-      this.mergeSmallCaps();
-      this.findWhiteSpace();
+      this.findWhiteSpace({mergeLines: true});
       this.groupRegions();
       this.calculatedLayout = true;
     }
@@ -228,7 +227,7 @@ class TextLayoutAnalyzer {
 
   sort() { return this.items.sort(this._sorters["orderItemsByTopLeft"]); }
 
-  mergeSmallCaps(){
+  mergeLines(){
     let regionItems = this.sort().map(item=>{
       let region = new Region(item); 
       region.item = item; 
@@ -258,7 +257,7 @@ class TextLayoutAnalyzer {
       const capsLine = new Region(capsLineBoundaries, capsLineRegions);
       capsLine.hasSmallCaps = true;
       if (!capsLineRegions.every(region=>capsLine.contains(region))) { debugger; }
-      capsLine.drawOnto(this.context);
+      //capsLine.drawOnto(this.context);
       return capsLine;
     };
 
@@ -289,7 +288,8 @@ class TextLayoutAnalyzer {
     textLayer.appendChild(spaceContainer);
   }
 
-  findWhiteSpace() {
+  findWhiteSpace(options={}) {
+    console.log("Finding White Space");
     /*
       Extracted from Breuel2002.
 
@@ -319,7 +319,11 @@ class TextLayoutAnalyzer {
     to try and find the tallest whiteSpaces.
     */
 
-    let elements = this.mergeSmallCaps();
+    let elements = (options.mergeLines) ? this.mergeLines() : this.sort().map(item=>{
+      let region = new Region(item); 
+      region.item = item; 
+      return region;
+    });
 
     // turn all of the items into bounding boxes
     // defined by their css measured dimensions.
@@ -457,8 +461,8 @@ class TextLayoutAnalyzer {
               let match = compareRegions(region, space);
               //drawComparison(region, space, match);
                    if ( match.identical ) { buckets.identical.push(space); }
-              else if ( match.superset  ) { buckets.subsets.push(space);   }
               else if ( match.subset    ) { buckets.supersets.push(space); }
+              else if ( match.superset  ) { buckets.subsets.push(space);   }
               else if ( match.disjoint  ) { buckets.disjoint.push(space);  }
               else                        { buckets.other.push(space);     }
               return buckets;

@@ -108,6 +108,7 @@
   
   export async function getPage(num) {
     pageRendering = true;
+    clearTextLayer();
 
     pageNum = num;
     page = await pdfDoc.getPage(num);
@@ -215,7 +216,7 @@
     ctx = pageCanvas.getContext('2d');
     await getPage(pageNum);
     billAnalyzer = new BillDocument(pdfDoc, {scale: scale});
-    await billAnalyzer.calculateLayout();
+    //await billAnalyzer.calculateLayout();
     // console.log(billAnalyzer.getBillText());
   });
 
@@ -226,9 +227,9 @@
   {#if pdfDoc }
     <header>
       <nav>
-        <button on:click|preventDefault={previousPage} >&lt;</button>
+        <button on:click|preventDefault={previousPage} >previous</button>
         <p>Page {pageNum} of {pdfDoc.numPages}</p>
-        <button on:click|preventDefault={nextPage}>&gt;</button>
+        <button on:click|preventDefault={nextPage}>next</button>
       </nav>
       <nav>
         <button on:click|preventDefault={dumpDocX}>download docx</button>
@@ -261,6 +262,10 @@
 
   .page-wrapper header nav {
     display: flex;
+  }
+
+  nav button {
+    cursor: pointer;
   }
 
   .page-wrapper header p {
