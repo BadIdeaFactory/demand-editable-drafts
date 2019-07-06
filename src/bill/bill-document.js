@@ -88,7 +88,7 @@ class BillDocument {
     ];
     let resultText = mungers.reduce((l, munger) => munger(l), repairedText);
     return resultText;
-  };
+  }
 
   process() {
     const isBillTextParent = (region) => {
@@ -256,7 +256,7 @@ class BillDocument {
     doc.addSection({
       lineNumberCountBy: 1,
       lineNumberRestart: docx.LineNumberRestartFormat.NEW_PAGE,
-      lineNumberDistance: Utils.pixelsToTWIPs(numberingSpacing),
+      lineNumberDistance: Utils.pixelsToTwips(numberingSpacing),
     });
     const mainLines = billMain.reduce(processSection, 
       { name:"main", doc: doc });

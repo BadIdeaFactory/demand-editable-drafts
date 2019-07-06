@@ -66,7 +66,7 @@ class BillParagraph {
     });
     if (this.pageBreak) { graf = graf.pageBreak(); }
     if (this.styles.margin && this.styles.margin > 0) {
-      let twips = Utils.pixelsToTWIPs(this.styles.margin);
+      let twips = Utils.pixelsToTwips(this.styles.margin);
       graf = graf.indent({firstLine: twips,});
     }
     graf = graf.spacing({before: 240});
