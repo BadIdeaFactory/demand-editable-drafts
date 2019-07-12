@@ -19,6 +19,16 @@
   		.then(result => console.log(result))
   		.finally(resultOrError => console.log(resultOrError));
 	}
+
+	import WorkerInterface from './worker-interface';
+
+	let layoutWorker;
+	export let startWorkerInterface = () => {
+		if (!layoutWorker) {
+			layoutWorker = new WorkerInterface();
+		}
+		return layoutWorker;
+	};
 </script>
 
 <main>

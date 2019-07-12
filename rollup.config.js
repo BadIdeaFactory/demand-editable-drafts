@@ -20,6 +20,15 @@ export default [
 		]
 	},
 	{
+		input: 'src/layout.worker.js',
+		output: {
+			format: 'iife',
+			file: 'public/layout.worker.js',
+			name: 'layoutWorker',
+		},
+		context: 'window'
+	},
+	{
 		input: 'src/main.js',
 		output: {
 			sourcemap: true,
