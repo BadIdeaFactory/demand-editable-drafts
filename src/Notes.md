@@ -2,6 +2,14 @@
 
 This is a scratch pad for research notes.
 
+## Todos
+
+- [ ] Split TextLayoutAnalyzer into two functions, item extraction and layout analysis
+- [ ] Create an wrapper class that extracts PDFjs items and turns them into regions.
+- [ ] Wrap layout analysis components in a web worker.
+    - [ ] figure out how web workers er, work.  how does data get passed in?
+    - [ ] 
+
 ## pdf.js
 
 Using pdf.js as a component is a little bit messy.  It's not set up by default to be used as an es6 import.  [Mozilla's instructions aren't super clear][pdfjs-instructions] on how to integrate it, and it appears that pdf.js is set up to use CommonJS modules.  [There's a ticket about this](https://github.com/mozilla/pdf.js/issues/10317).

@@ -1,5 +1,3 @@
-import docx from 'docx';
-import FileSaver from 'file-saver';
 import Region from '../region';
 
 class TextLayoutAnalyzer {
