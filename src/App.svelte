@@ -20,14 +20,14 @@
   		.finally(resultOrError => console.log(resultOrError));
 	}
 
-	import WorkerInterface from './worker-interface';
+	import LayoutAnalyzer from './layout-analyzer';
 
-	let layoutWorker;
+	let layoutAnalyzer;
 	export let startWorkerInterface = () => {
-		if (!layoutWorker) {
-			layoutWorker = new WorkerInterface();
+		if (!layoutAnalyzer) {
+			layoutAnalyzer = new LayoutAnalyzer();
 		}
-		return layoutWorker;
+		return layoutAnalyzer;
 	};
 </script>
 
