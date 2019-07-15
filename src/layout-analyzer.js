@@ -16,6 +16,7 @@ class AnalysisQueue {
     const messageData = message.data;
     const { job_id, action, data } = messageData;
     console.log('Recieved message from worker:', job_id, action, data);
+    //console.log('Recieved message from worker:', message);
     // switch?
   }
 

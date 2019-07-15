@@ -6,14 +6,17 @@ class Action {
 
     this.callbacks = {
       start:    (this.options.start    || []),
-      progress: (this.options.progress || []),
       complete: (this.options.complete || []),
     };
   }
 
   async run(){
-    this.process(0, `Started Job (${this.constructor.name} | ${this.job_id})`);
-    this.complete(await this.process());
+    if (this.callbacks.start.length > 0) {
+      this.callbacks.start.forEach(cb => cb(float, message));
+    }
+    this.progress(0, `Started Job (${this.constructor.name} | ${this.job_id})`);
+    const result = await this.process();
+    this.complete(result);
   }
 
   async process() { throw "please implement process"; }
@@ -25,25 +28,33 @@ class Action {
   }
 
   progress(float, message){ 
-    if (float < 0 || float > 1) { throw "Progress must be a float between 0 and 1."; }
-    if (self.debug) { console.log(message); }
-    if (this.callbacks.progress.length > 0) {
-      this.callbacks.forEach(cb => cb(float, message));
-    } else {
-      if (self.debug) { console.warn("progress called without callbacks"); }
-    }
+    if (float < 0 || float > 1) { throw `Progress (${float}) must be a float between 0 and 1.`; }
+    if (self.debug && false) { console.log(message); }
+    this.send({progress: float, message: message});
+  }
+
+  send(msgData){
+    sendMessage({
+      job_id: this.job_id,
+      action: this.constructor.name,
+      data: msgData,
+    });
   }
 }
 
 class lolJob extends Action {
   async process() {
+    const items = [1,2,3,4];
     const sleep = m => new Promise(r => setTimeout(r, m));
     const startTime = new Date();
-    await sleep(3000);
+    for (const [index, item] of items.entries()) {
+      await sleep(500);
+      this.progress((index+1)/items.length);
+    }
     const completeTime = new Date();
 
     return {
-      job_id: job_id,
+      job_id: this.job_id,
       action: name,
       data: { 
         message: `Acknowledging message. \n\tStarted at: ${startTime}\n\tCompleted at: ${completeTime}`,
@@ -54,31 +65,16 @@ class lolJob extends Action {
   }
 }
 
-async function uselessJob(job_id, data){
-  const name = "uselessJob";
-
-  const sleep = m => new Promise(r => setTimeout(r, m));
-  const startTime = new Date();
-  await sleep(3000);
-  const completeTime = new Date();
-  completeJob({
-    job_id: job_id,
-    action: name,
-    data: { 
-      message: `Acknowledging message. \n\tStarted at: ${startTime}\n\tCompleted at: ${completeTime}`,
-      startTime: startTime,
-      completeTime: completeTime,
-    },
-  });
-}
-
 self.status = "available";
+self.currentJob = null;
 self.debug = true;
 self.actions = {
-  uselessJob: uselessJob,
-  lolJob: lolJob
+  lolJob: lolJob,
 };
-self.currentJob = null;
+
+const callbacks = {
+  complete: [completeJob]
+};
 
 // `listen` is the main entry point.  It provides the main guard for the availability
 // of the worker.  If the worker is available, it locks the worker and begins work.
@@ -93,9 +89,11 @@ function listen(message){
   if (action == "getStatus") {
     sendStatus(job_id, action, data);
   } else if (self.status == "available") {
-    const actionFunction = findAction(action);
-    if (actionFunction){
-      startJob(job_id, data, actionFunction);
+    const actionClass = findAction(action);
+    if (actionClass){
+      const job = new actionClass(job_id, data, callbacks);
+      self.currentJob = job;
+      job.run();
     } else {
       throw `Unable to find action: ${action}`;
     }
@@ -106,8 +104,14 @@ function listen(message){
 }
 self.onmessage = listen;
 self.onmessageerror = function(...args){ console.error(args); };
-function sendResponse(message) { self.postMessage(message); }
-
+function sendMessage(message) { self.postMessage(message); }
+function sendBusy(job_id){ 
+  self.postMessage({
+    job_id: job_id,
+    status: 'rejected',
+    data: {  reason: "busy", currentJob: currentJob.job_id, action: currentJob.constructor.name }
+  });
+}
 function findAction(actionName){ return self.actions[actionName]; }
 
 function sendStatus(job_id, action, data) {
@@ -120,20 +124,11 @@ function sendStatus(job_id, action, data) {
       availableActions: Object.keys(self.actions),
     }
   };
-  sendResponse(response);
-}
-
-async function startJob(job_id, data, action){ 
-  self.status = "busy";
-  const responseData = await action(data);
-  completeJob({
-    job_id: job_id,
-    action: action.name,
-    data: responseData,
-  });
+  sendMessage(response);
 }
 
 function completeJob(response){
-  sendResponse(response);
+  sendMessage(response);
+  self.currentJob = null;
   self.status = 'available';
 }
