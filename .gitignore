@@ -2,3 +2,4 @@
 node_modules
 public/bundle.*
 public/pdf.worker.js
+public/layout.worker.js
