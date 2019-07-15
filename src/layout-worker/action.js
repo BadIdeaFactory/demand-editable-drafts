@@ -3,7 +3,6 @@ class Action {
     this.job_id  = job_id;
     this.data    = data;
     this.options = options;
-    this.status  = 'waiting';
 
     this.callbacks = {
       start:    (this.options.start    || []),
@@ -12,7 +11,6 @@ class Action {
   }
 
   async start(){
-    this.status = 'started';
     if (this.callbacks.start.length > 0) {
       this.callbacks.start.forEach(cb => cb(float, message));
     }
@@ -36,7 +34,7 @@ class Action {
   progress(float, message){ 
     if (float < 0 || float > 1) { throw `Progress (${float}) must be a float between 0 and 1.`; }
     if (this.options.progress) {
-      this.send({status: this.status, progress: float, message: message});
+      this.send({progress: float, message: message});
     }
   }
 

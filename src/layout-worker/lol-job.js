@@ -11,7 +11,6 @@ class LolJob extends Action {
       this.progress((index+1)/items.length);
     }
     const completeTime = new Date();
-    this.progress(1, `Completed Job (${this.constructor.name} | ${this.job_id})`);
 
     return {
       job_id: this.job_id,
