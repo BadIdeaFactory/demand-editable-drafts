@@ -20,7 +20,7 @@ export default [
 		]
 	},
 	{
-		input: 'src/layout.worker.js',
+		input: 'src/layout-worker/layout.worker.js',
 		output: {
 			format: 'iife',
 			file: 'public/layout.worker.js',
