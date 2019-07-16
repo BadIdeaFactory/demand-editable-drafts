@@ -6,17 +6,20 @@ import PDFUtils from './pdf-utils';
 */
 
 class TextItem {
-  constructor(item, styles) {
-    this.item = item;
+  constructor(data, styles) {
+    this.data = data;
+    this.text = data.str;
     this.documentStyles = styles;
-    this.fontStyle = this.documentStyles[this.item.fontName];
-
+    this.fontName = this.data.fontName;
+    this.fontStyle = this.documentStyles[this.data.fontName];
     this.fontFamily = this.fontStyle.fontFamily;
   }
 
-  calculateDimensions(viewport, context){
+  // Frankensteined together from pdf.js's text_layer.js methods: 
+  //   appendText and _layoutText
+  calculateDimensions(viewport){
     const style = this.fontStyle;
-    const tx = PDFUtils.matrix_transform(viewport.transform, this.item.transform);
+    const tx = PDFUtils.matrix_transform(viewport.transform, this.data.transform);
     
     let angle = Math.atan2(tx[1], tx[0]);
     if (style.vertical) { angle += Math.PI / 2; }
@@ -35,7 +38,7 @@ class TextItem {
     }
 
     if (angle !== 0) { this.radians =  angle * (180 / Math.PI); }
-    const scaledItemWidth = ((style.vertical) ? this.item.height : this.item.width) * viewport.scale;
+    const scaledItemWidth = ((style.vertical) ? this.data.height : this.data.width) * viewport.scale;
     
     let left, top, bottom, right; 
     if (angle === 0) {
@@ -74,12 +77,85 @@ class TextItem {
     // hmmmmm. these should probably also factor in the angle like we're doing with the left/top.
     this.bottom = this.top  + this.height;
     this.right  = this.left + this.width;
-  
+
+    // Match Region
+    this.center = this.findCenter();
+    this.aspectRatio = this.width / this.height;
+    this.area = this.width*this.height;
+
     return this;
   }
 
+  // Cribbed from Region
+  findCenter() {
+    return {
+      x: (this.right  - this.left)/2 + this.left,
+      y: (this.bottom - this.top)/2 + this.top
+    };
+  }
+
+  // Cribbed from Region.
+  intersects(region, options={}) {
+    // We can rely on the fact that each region's `right` > `left` and `bottom` > `top`.
+    // So, we can grab the boundaries closest to the opposite edge for each dimension
+    let furthestLeft  = Math.max(this.left, region.left);
+    let nearestRight  = Math.min(this.right, region.right);
+    let lowestTop     = Math.max(this.top, region.top);
+    let highestBottom = Math.min(this.bottom, region.bottom);
+    // and then make sure that the boundaries overlap.
+    const intersectsHorizontally = furthestLeft < nearestRight;
+    const intersectsVertically   = lowestTop < highestBottom;
+    let result;
+    if (options.onlyVertically) {
+      result = intersectsVertically;
+    } else if (options.onlyHorizontally) {
+      result = intersectsHorizontally;
+    } else {
+      result = intersectsHorizontally && intersectsVertically;
+    }
+    return result;
+  }
+
+  cssAttributes(context){
+    let textWidth = null;
+    let scale = null;
+    let transform;
+    let originalTransform;
+    let transformString;
+    let styleString = '';
+
+    if (context) {
+      context.font = `${this.height}px ${this.fontFamily}`;
+      textWidth = context.measureText(this.data.str).width;
+      scale = this.width / textWidth;
+      transform = `scaleX(${scale})`;
+    }
+    if (this.angle !== 0) {
+      transform = `rotate(${this.angle}deg) ${transform}`;
+    }
+    originalTransform = transform;
+    transformString = `transform: ${transform};`;
+
+    const css = {
+      angle: this.angle,
+      canvasWidth: this.width,
+      fontFamily: this.fontFamily,
+      fontHeight: this.height,
+      left: this.left,
+      originalTransform: originalTransform,
+      transform: transformString,
+      scale: scale,
+      top: this.top,
+      width: textWidth,
+    };
+    css.style = `left: ${this.left}px; top: ${this.top}px; font-size: ${this.height}px; font-family: ${this.fontFamily}; ${transformString}`;
+    return css;
+  }
+
+  // Frankensteined together from pdf.js's text_layer.js methods: 
+  //   appendText and _layoutText
   calculateStyles(viewport, context) {
-    let item = this.item;
+    let item = this.data;
     let styles = this.styles;
     // This is cribbed from the `appendText` function in text_layer.js
     // START `appendText`
@@ -175,7 +251,7 @@ class TextItem {
     // pdf.js batches this and only set the font
     // if it differs between two text elements
     context.font = `${fontSize} ${fontFamily}`;
-    let width = context.measureText(textDiv.textContent).width;
+    let width = context.measureText(this.data.str).width;
     textDivProperties.width = width;
     style.spaceWidth = context.measureText(" ").width;
     style.fontHeight = fontHeight;
