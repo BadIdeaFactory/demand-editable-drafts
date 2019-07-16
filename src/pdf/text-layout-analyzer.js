@@ -1,6 +1,5 @@
 import Region from '../region';
 import MaximalRectangles from './whitespace/maximal-rectangles';
-import PDFUtils from './pdf-utils';
 import TextItem from './text-item';
 
 class TextLayoutAnalyzer {
@@ -57,43 +56,39 @@ class TextLayoutAnalyzer {
 
   calculateLayout(options={}) {
     if (!this.calculatedLayout || options.force){
-      this.calculateStyles();
-
-      let elements = this.mergeLines();
-      // We're using the canvas as the initial bounding box.
-      const canvasBounds = { 
-        left: 0, 
-        top: 0, 
-        bottom: this.context.canvas.height, 
-        right: this.context.canvas.width,
-      };
-      const canvas = new Region(canvasBounds, elements);
-      this.whiteSpaces = MaximalRectangles.findWhiteSpace(canvas);
+      this._calculateStyles();
+      this._calculateWhiteSpace();
       this.groupRegions();
       this.calculatedLayout = true;
     }
     return this;
   }
 
-  calculateStyles() {
+  _calculateStyles() {
     this.textItems.forEach(item => item.calculateDimensions(this.viewport) );
     return { items: this.textItems, styles: this.styles };
   }
 
-  appendTextElementsTo(textLayer) {
-    this.calculateLayout();
-    this.region.walk((region) => {
-      let lines = region.groupItems();
-      lines.forEach(line => {
-        line.items.sort((a,b)=>a.left-b.left).map(item =>{ 
-          const element = document.createElement('span');
-          const itemStyles = item.cssAttributes(this.context);
-          element.setAttribute('style', itemStyles.style);
-          element.textContent = item.text;
-          textLayer.appendChild(element);
-        });
-      });
-    });
+  _calculateWhiteSpace(){
+    let elements = this.mergeLines();
+    // We're using the canvas as the initial bounding box.
+    const canvasBounds = { 
+      left: 0, 
+      top: 0, 
+      bottom: this.context.canvas.height, 
+      right: this.context.canvas.width,
+    };
+    const canvas = new Region(canvasBounds, elements);
+    this.whiteSpaces = MaximalRectangles.findWhiteSpace(canvas);
+    return this.whiteSpaces;
+  }
+
+  groupRegions() {
+    // this needs to be called after _calculateStyles called so that
+    // the items have defined offsetWidth, offsetHeight, offsetTop and offsetLeft
+    this.region.setItems(this.textItems);
+    this.region.setObstacles(this.whiteSpaces);
+    this.regions = this.region.partitionByObstacles();
   }
 
   sort() { return this.items.sort(this._sorters.orderByTopLeft); }
@@ -150,6 +145,22 @@ class TextLayoutAnalyzer {
     return result;
   }
 
+  appendTextElementsTo(textLayer) {
+    this.calculateLayout();
+    this.region.walk((region) => {
+      let lines = region.groupItems();
+      lines.forEach(line => {
+        line.items.sort((a,b)=>a.left-b.left).map(item =>{ 
+          const element = document.createElement('span');
+          const itemStyles = item.cssAttributes(this.context);
+          element.setAttribute('style', itemStyles.style);
+          element.textContent = item.text;
+          textLayer.appendChild(element);
+        });
+      });
+    });
+  }
+
   appendWhiteSpaceTo(textLayer) {
     this.calculateLayout();
     let spaceContainer = document.createElement("div");
@@ -161,14 +172,6 @@ class TextLayoutAnalyzer {
       space.element = el;
     });
     textLayer.appendChild(spaceContainer);
-  }
-
-  groupRegions() {
-    // this needs to be called after calculateStyles called so that
-    // the items have defined offsetWidth, offsetHeight, offsetTop and offsetLeft
-    this.region.setItems(this.textItems);
-    this.region.setObstacles(this.whiteSpaces);
-    this.regions = this.region.partitionByObstacles();
   }
 }
 

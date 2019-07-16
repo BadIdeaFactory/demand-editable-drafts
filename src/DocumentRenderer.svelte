@@ -58,7 +58,7 @@
 
   export async function drawTextBounds() {
     let layoutAnalyzer = await getTextLayoutAnalyzer();
-    layoutAnalyzer.calculateStyles();
+    layoutAnalyzer._calculateStyles();
 
     let textLayer = document.createElement('div');
     textLayer.style = `
