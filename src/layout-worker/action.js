@@ -15,7 +15,7 @@ class Action {
       this.callbacks.start.forEach(cb => cb(float, message));
     }
     if (self.debug) { console.log(`Started Job (${this.constructor.name} | ${this.job_id})`); }
-    const result = await this.process();
+    const result = await this.process(this.data);
     this.complete(result);
     return result;
   }

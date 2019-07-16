@@ -39,7 +39,7 @@ class BillDocument {
         const context = canvas.getContext('2d');
 
         const textItems = await page.getTextContent({normalizeWhiteSpace: true});
-        const analyzer = new TextLayoutAnalyzer(textItems, viewport, context);
+        const analyzer = new TextLayoutAnalyzer(textItems, viewport.transform, context.canvas.width, context.canvas.height);
         pages.push(analyzer.calculateLayout());
         // commonObjs is where the fonts live.
         // page.commonObjs isn't populated unless you get the operator list.

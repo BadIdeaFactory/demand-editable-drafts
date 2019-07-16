@@ -43,8 +43,8 @@
   */
 
   export async function getTextLayoutAnalyzer(){
-    let text = await getText();
-    layoutAnalyzer = new TextLayoutAnalyzer(text, viewport, ctx);
+    const text = await getText();
+    layoutAnalyzer = new TextLayoutAnalyzer(text, viewport.transform, viewport.scale, pageCanvas.width, pageCanvas.height);
     return layoutAnalyzer;
   }
 

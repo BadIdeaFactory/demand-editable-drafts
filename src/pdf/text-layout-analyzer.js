@@ -3,54 +3,36 @@ import MaximalRectangles from './whitespace/maximal-rectangles';
 import TextItem from './text-item';
 
 class TextLayoutAnalyzer {
-  constructor(text, viewport, context) {
+  constructor(text, viewportTransform, viewportScale, width, height) {
     this.styles    = text.styles;
-    let colors = ["Gray", "Black", "Red", "Maroon", "Yellow", "Olive", "Lime", 
-                  "Green", "Aqua", "Teal", "Blue", "Navy", "Fuchsia", "Purple"];
-    Object.values(this.styles).forEach((style) => {
-      let color = colors.splice(Math.floor(Math.random() * colors.length), 1);
-      style.color = color[0];
-    });
-
     this.items     = text.items;
     this.textItems = this.items.map(item => new TextItem(item, this.styles));
-    this.viewport = viewport;
-    this.context  = context;
+    this.transform = viewportTransform;
+    this.scale     = viewportScale;
+    // these are the canvas width & height in px.
+    this.width = width;
+    this.height = height;
+    this.bounds = { left: 0, top: 0, bottom: this.height, right: this.width, };
+
     this.whiteSpace = [];
     this.groups = [];
-
-    this._sorters = {
-      orderByTopLeft: (a, b) => {
-        // if the y coordinates are the same
-        if (a.top == b.top) {
-          // determine what the x position is
-          return a.left - b.left;
-        } else {
-          // otherwise just sort these two points based on the y.
-          return a.top - b.top;
-        }
-      },
-      orderItemsByTopLeft: (a, b) => {
-        // if the y coordinates are the same
-        if (a.cssStyles.top == b.cssStyles.top) {
-          // determine what the x position is
-          return a.cssStyles.left - b.cssStyles.left;
-        } else {
-          // otherwise just sort these two points based on the y.
-          return a.cssStyles.top - b.cssStyles.top;
-        }
-      },
-      orderByLeft: (a, b) => a.cssStyles.left - b.cssStyles.left,
-    };
-
     this.region = this._calculateRegion();
   }
 
+  orderByTopLeft(a,b){
+    // if the y coordinates are the same
+    if (a.top == b.top) {
+      // determine what the x position is
+      return a.left - b.left;
+    } else {
+      // otherwise just sort these two points based on the y.
+      return a.top - b.top;
+    }
+  }
+  orderByLeft(a,b){ return a.cssStyles.left - b.cssStyles.left; }
+
   _calculateRegion() {
-    let canvasRegion = new Region(
-      { top:  0, bottom: this.context.canvas.height,
-        left: 0, right:  this.context.canvas.width,
-    });
+    let canvasRegion = new Region(this.bounds);
     return canvasRegion;
   }
 
@@ -65,20 +47,14 @@ class TextLayoutAnalyzer {
   }
 
   _calculateStyles() {
-    this.textItems.forEach(item => item.calculateDimensions(this.viewport) );
+    this.textItems.forEach(item => item.calculateDimensions(this.transform, this.scale) );
     return { items: this.textItems, styles: this.styles };
   }
 
   _calculateWhiteSpace(){
     let elements = this.mergeLines();
     // We're using the canvas as the initial bounding box.
-    const canvasBounds = { 
-      left: 0, 
-      top: 0, 
-      bottom: this.context.canvas.height, 
-      right: this.context.canvas.width,
-    };
-    const canvas = new Region(canvasBounds, elements);
+    const canvas = new Region(this.bounds, elements);
     this.whiteSpaces = MaximalRectangles.findWhiteSpace(canvas);
     return this.whiteSpaces;
   }
@@ -91,7 +67,7 @@ class TextLayoutAnalyzer {
     this.regions = this.region.partitionByObstacles();
   }
 
-  sort() { return this.items.sort(this._sorters.orderByTopLeft); }
+  sort() { return this.items.sort(this.orderByTopLeft); }
 
   mergeLines(){
     /* let regionItems = this.sort().map(item=>{
@@ -140,19 +116,27 @@ class TextLayoutAnalyzer {
     const identical = (arr1, arr2) => arr1.every(i=>arr2.includes(i)) && arr2.every(i=>arr1.includes(i));
     if (!(identical(allItems,resultItems) && identical(allItems, this.textItems))) { debugger; }
     let unaccountedItemRegions = itemRegions.filter( r => unaccountedItems.includes(r));
-    let result = [...capsLines, ...unaccountedItemRegions].sort(this._sorters.orderByTopLeft);
+    let result = [...capsLines, ...unaccountedItemRegions].sort(this.orderByTopLeft);
     //this.region.setItems(result);
     return result;
   }
 
-  appendTextElementsTo(textLayer) {
+  appendTextElementsTo(textLayer, context) {
     this.calculateLayout();
+    const colors = ["Gray", "Black", "Red", "Maroon", "Yellow", "Olive", "Lime", 
+    "Green", "Aqua", "Teal", "Blue", "Navy", "Fuchsia", "Purple"];
+    const colorMap = Object.keys(this.styles).reduce((buckets, fontName) => {
+      let color = colors.splice(Math.floor(Math.random() * colors.length), 1);
+      buckets[fontName] = color[0];
+      return buckets;
+    }, {});
+
     this.region.walk((region) => {
       let lines = region.groupItems();
       lines.forEach(line => {
         line.items.sort((a,b)=>a.left-b.left).map(item =>{ 
           const element = document.createElement('span');
-          const itemStyles = item.cssAttributes(this.context);
+          const itemStyles = item.cssAttributes(context);
           element.setAttribute('style', itemStyles.style);
           element.textContent = item.text;
           textLayer.appendChild(element);

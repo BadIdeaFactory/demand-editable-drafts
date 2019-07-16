@@ -17,9 +17,9 @@ class TextItem {
 
   // Frankensteined together from pdf.js's text_layer.js methods: 
   //   appendText and _layoutText
-  calculateDimensions(viewport){
+  calculateDimensions(vpTransform, vpScale){
     const style = this.fontStyle;
-    const tx = PDFUtils.matrix_transform(viewport.transform, this.data.transform);
+    const tx = PDFUtils.matrix_transform(vpTransform, this.data.transform);
     
     let angle = Math.atan2(tx[1], tx[0]);
     if (style.vertical) { angle += Math.PI / 2; }
@@ -38,7 +38,7 @@ class TextItem {
     }
 
     if (angle !== 0) { this.radians =  angle * (180 / Math.PI); }
-    const scaledItemWidth = ((style.vertical) ? this.data.height : this.data.width) * viewport.scale;
+    const scaledItemWidth = ((style.vertical) ? this.data.height : this.data.width) * vpScale;
     
     let left, top, bottom, right; 
     if (angle === 0) {

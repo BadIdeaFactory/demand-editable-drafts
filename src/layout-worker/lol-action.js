@@ -1,6 +1,6 @@
 import Action from './action';
 
-class LolJob extends Action {
+class LolAction extends Action {
   async process() {
     this.progress(0, `Started Job (${this.constructor.name} | ${this.job_id})`);
     const items = [1,2,3,4];
@@ -24,4 +24,4 @@ class LolJob extends Action {
   }
 }
 
-export default LolJob;
+export default LolAction;

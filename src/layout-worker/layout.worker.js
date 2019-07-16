@@ -1,10 +1,12 @@
-import LolJob from './lol-job';
+import LolAction from './lol-action';
+import PageLayoutAction from './page-layout-action';
 
 self.status = "available";
 self.currentJob = null;
 self.debug = true;
 self.actions = {
-  lolJob: LolJob,
+  lolAction: LolAction,
+  pageLayoutAction: PageLayoutAction,
 };
 
 // `listen` is the main entry point.  It provides the main guard for the availability
