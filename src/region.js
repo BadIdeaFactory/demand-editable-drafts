@@ -1,3 +1,5 @@
+import TextItem from './pdf/text-item';
+
 class Region {
   constructor(params, items=[], obstacles=[]) {
     let keys = Object.keys(params);
@@ -54,11 +56,14 @@ class Region {
   setItems(candidates) {
     this.items = candidates.filter(el => this.intersects(el));
     const getStyles = (fonts, obj) => {
-      if (obj instanceof Region && obj.fonts.length > 0){
+      if (obj instanceof Region && obj.fonts.size > 0){
         obj.fonts.forEach(font => fonts.add(font));
-      } else {
-        const fontName = (obj.item)? obj.item.fontName : obj.fontName;
+      } else if (obj instanceof TextItem) {
+        const fontName = obj.fontName;
         fonts.add(fontName);
+      } else {
+        debugger;
+        throw '¯\_(ツ)_/¯';
       }
       return fonts;
     };
@@ -293,14 +298,14 @@ class Region {
 
   getText(options={}) {
     const defaultJoinLine = (line)=> {
-      return line.items.sort((a,b)=>a.left-b.left).map( r => r.item.str ).join(' ');
+      return line.items.sort((a,b)=>a.left-b.left).map( r => r.text ).join(' ');
     };
     let processLine = defaultJoinLine;
     if (options.line) { processLine = options.line; }
 
     let text;
     if (this.item) {
-      text = this.item.str;
+      text = this.text;
     } else {
       let textLines = this.walk((region) => {
         let lines = region.groupItems(); 

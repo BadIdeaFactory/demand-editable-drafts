@@ -167,6 +167,7 @@ class TextLayoutAnalyzer {
     // this needs to be called after calculateStyles called so that
     // the items have defined offsetWidth, offsetHeight, offsetTop and offsetLeft
     this.region.setItems(this.textItems);
+    this.region.setObstacles(this.whiteSpaces);
     this.regions = this.region.partitionByObstacles();
   }
 }
