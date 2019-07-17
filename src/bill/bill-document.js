@@ -35,6 +35,7 @@ class BillDocument {
       const canvas = document.createElement('canvas');
       const context = canvas.getContext('2d');
       for (let pageNumber = 1; pageNumber <= this.pageCount ; pageNumber++) {
+        if (this.cancel) { console.log('calculateLayout canceled'); return false; }
         console.log(`Calculating layout for Page ${pageNumber} of ${this.pageCount}`);
         const page = await this.getPage(pageNumber);
         const viewport = page.getViewport({scale:this.scale});

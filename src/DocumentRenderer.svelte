@@ -49,12 +49,13 @@
   }
 
   export async function dumpDocX() {
-    await billAnalyzer.calculateLayout();
-    const blob = new Blob(
-      [await billAnalyzer.dumpDocX()], 
-      {type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'}
-    );
-    FileSaver.saveAs(blob, fileName.replace(/pdf$/, 'docx'));
+    if (await billAnalyzer.calculateLayout()) {
+      const blob = new Blob(
+        [await billAnalyzer.dumpDocX()], 
+        {type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'}
+      );
+      FileSaver.saveAs(blob, fileName.replace(/pdf$/, 'docx'));
+    }
   }
 
   export async function drawTextBounds() {

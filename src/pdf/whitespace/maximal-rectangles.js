@@ -163,7 +163,7 @@ const MaximalRectangles = {
             };
 
             let categorizeSpaces = (buckets, space) => {
-              console.log("categorizingSpaces");
+              //console.log("categorizingSpaces");
               let match = compareRegions(region, space);
               //drawComparison(region, space, match);
                    if ( match.identical ) { buckets.identical.push(space); }
