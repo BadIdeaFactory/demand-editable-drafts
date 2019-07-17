@@ -65,15 +65,14 @@ class BillDocument {
     const repairedElements = sortedElements.reduce((els, el, id, sorted)=>{
       const isSmallCaps = (el, id, sorted)=>{
         let previousEl = sorted[id-1];
-        return (el.item.str.match(capitalMatcher) && previousEl.height > el.height);
+        return (el.text.match(capitalMatcher) && previousEl.height > el.height);
       };
       // don't push a space if this is the first element,
       // or if this element is smallcaps.
-      const itemText = el.item.str;
       if (id > 0 && !isSmallCaps(el, id, sorted)) { 
         els.push(" ");
       }
-      els.push(itemText);
+      els.push(el.text);
       return els;
     }, []);
     const repairedText = repairedElements.join('');

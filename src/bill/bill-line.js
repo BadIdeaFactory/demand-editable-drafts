@@ -24,7 +24,7 @@ class BillLine {
       capitalMatcher = /^([^a-z]|\W)*[A-Z]([^a-z]|\W)*$/; // strings w/ at least one capital 
     }
 
-    const getFontNames = (els) => els.map(el => el.item.fontName);
+    const getFontNames = (els) => els.map(el => el.fontName);
     const getHeights = (els) => els.map(el => el.height);
     const isSmallCaps = (el, id, sorted)=>{
       let mainHeight;
@@ -47,17 +47,17 @@ class BillLine {
       }
       let result = (
         mainHeight > el.height &&
-        el.item.fontName == fontName &&
-        el.item.str.match(capitalMatcher)
+        el.fontName == fontName &&
+        el.text.match(capitalMatcher)
       );
-      //if (result) { console.log(el.item.str); }
+      //if (result) { console.log(el.text); }
       return result;
     };
 
     const gatherRuns = (runs, el, id, sorted)=>{
       // don't push a space if this is the first element,
       // or if this element is smallcaps.
-      //const itemText = el.item.str;
+      //const itemText = el.text;
       //if (id > 0 && !isSmallCaps(el, id, sorted)) { els.push(" "); }
 
       let components = [];
@@ -72,8 +72,8 @@ class BillLine {
         if (danglerMatch && !previous.styles.smallCaps) {
           let [matchText, previousText, dangler] = danglerMatch;
   
-          let text = `${dangler}${el.item.str.toLocaleLowerCase()}`;
-          if (sorted[id+1].item.str.match(/^\w/)) { text += ' '; }
+          let text = `${dangler}${el.text.toLocaleLowerCase()}`;
+          if (sorted[id+1].text.match(/^\w/)) { text += ' '; }
   
           previous.text = previousText;
           let smallCapsRun = {
@@ -92,7 +92,7 @@ class BillLine {
           // but we'll always need the smallCaps run.
           components.push(smallCapsRun);  
         } else {
-          const text = `${el.item.str.toLocaleLowerCase()} `;
+          const text = `${el.text.toLocaleLowerCase()} `;
           const styles = this.extractStyle(el);
           styles.smallCaps = true;
           components = [{
@@ -116,15 +116,18 @@ class BillLine {
     const sortedElements = this.items.sort((a,b)=>a.left-b.left);
     const runs = sortedElements.reduce(gatherRuns, []);
 
+    // runs are just a generic object we created above.
     this.runs   = runs;
-    let runStyles = runs.filter(r=>!r.styles.smallCaps)[0].styles;
+    //debugger;
+    const notSmallCap = runs.filter(r=>!r.styles.smallCaps)[0];
+    let runStyles = (notSmallCap || runs[0]).styles;
     Object.keys(runStyles).forEach(key => this.styles[key] = runStyles[key]);
     this.text = this.runs.map(r=>r.text).join(" ");
   }
 
   extractStyle(obj){
     if (obj instanceof Region && obj.item) {
-      return { fontSize: obj.height, fontName: obj.item.fontName, };
+      return { fontSize: obj.height, fontName: obj.fontName, };
     } else {
       return obj.getStyles();
     }

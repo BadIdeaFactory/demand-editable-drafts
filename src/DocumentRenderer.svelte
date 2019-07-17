@@ -49,6 +49,7 @@
   }
 
   export async function dumpDocX() {
+    await billAnalyzer.calculateLayout();
     const blob = new Blob(
       [await billAnalyzer.dumpDocX()], 
       {type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'}
@@ -216,7 +217,6 @@
     ctx = pageCanvas.getContext('2d');
     await getPage(pageNum);
     billAnalyzer = new BillDocument(pdfDoc, {scale: scale});
-    //await billAnalyzer.calculateLayout();
     // console.log(billAnalyzer.getBillText());
   });
 

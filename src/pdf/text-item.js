@@ -13,6 +13,11 @@ class TextItem {
     this.fontName = this.data.fontName;
     this.fontStyle = this.documentStyles[this.data.fontName];
     this.fontFamily = this.fontStyle.fontFamily;
+    this.styles = {
+      fontName: this.fontName,
+      fontFamily: this.fontFamily,
+      fontStyle: this.fontStyle
+    };
   }
 
   // Frankensteined together from pdf.js's text_layer.js methods: 
@@ -68,9 +73,10 @@ class TextItem {
     }
 
     this.fontHeight = fontHeight;
-    this.angle  = angle;
+    this.styles.fontSize = fontHeight;
     this.height = fontHeight;
     this.width  = scaledItemWidth;
+    this.angle  = angle;
 
     this.left   = left;
     this.top    = top;
@@ -153,6 +159,8 @@ class TextItem {
     return result;
   }
 
+  getText() { return this.text; }
+  getStyles() { return this.styles; }
 }
 
 export default TextItem;
