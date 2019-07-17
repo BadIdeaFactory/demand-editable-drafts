@@ -42,7 +42,7 @@ class TextItem {
       fontAscent = (1 + style.descent) * fontAscent;
     }
 
-    if (angle !== 0) { this.radians =  angle * (180 / Math.PI); }
+    if (angle !== 0) { this.degrees =  angle * (180 / Math.PI); }
     const scaledItemWidth = ((style.vertical) ? this.data.height : this.data.width) * vpScale;
     
     let left, top, bottom, right; 
@@ -108,7 +108,7 @@ class TextItem {
       transform = `scaleX(${scale})`;
     }
     if (this.angle !== 0) {
-      transform = `rotate(${this.angle}deg) ${transform}`;
+      transform = `rotate(${this.degrees}deg) ${transform}`;
     }
     originalTransform = transform;
     transformString = `transform: ${transform};`;
