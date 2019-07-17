@@ -3,20 +3,62 @@ import MaximalRectangles from './whitespace/maximal-rectangles';
 import TextItem from './text-item';
 
 class PageLayoutAnalyzer {
-  constructor(text, viewportTransform, viewportScale, width, height) {
-    this.styles    = text.styles;
-    this.items     = text.items;
-    this.textItems = this.items.map(item => new TextItem(item, this.styles));
-    this.transform = viewportTransform;
-    this.scale     = viewportScale;
-    // these are the canvas width & height in px.
-    this.width = width;
-    this.height = height;
-    this.bounds = { left: 0, top: 0, bottom: this.height, right: this.width, };
+  constructor(text, viewportTransform, viewportScale, width, height, options={}) {
+    const initialize = (text, viewportTransform, viewportScale, width, height, options) => {
+      this.pdfjsData = text;
+      this.styles    = text.styles;
+      this.items     = text.items.map(item => new TextItem(item, this.styles));
+      this.transform = viewportTransform;
+      this.scale     = viewportScale;
+      // these are the canvas width & height in px.
+      this.width = width;
+      this.height = height;
+      this.bounds = { left: 0, top: 0, bottom: this.height, right: this.width, };
+  
+      this.whiteSpaces = [];
+      this.groups = [];
+      this.region = this._calculateRegion(); 
+    };
 
-    this.whiteSpace = [];
-    this.groups = [];
-    this.region = this._calculateRegion();
+    if (options.rehydrate && options.data) {
+      this.rehydrate(options.data);
+    } else {
+      initialize(text, viewportTransform, viewportScale, width, height, options);
+    }
+  }
+
+  rehydrate(data) {
+    Object.entries(data).forEach(([key, value]) => {
+      this[key] = value;
+    });
+    const itemRehydrator = itemData => { 
+      const item = new TextItem(itemData.data, itemData.documentStyles);
+      Object.entries(itemData).forEach(([key, value]) => {
+        item[key] = value;
+      });
+      return item;
+    };
+    this.items = this.items.map(itemRehydrator);
+
+    const obstacles = data.region.obstacles;
+    const regionRehydrator = (regionData) => {
+      const bounds = {
+        left: regionData.left, 
+        top: regionData.top, 
+        bottom: regionData.bottom, 
+        right: regionData.right,
+      };
+      const region = new Region(bounds, this.items, obstacles);
+
+      Object.entries(regionData.regions).forEach(([key, subRegion]) => {
+        const subRegionData = subRegion;
+        subRegionData.items = this.items;
+        subRegionData.obstacles = obstacles;
+        region.regions[key] = regionRehydrator(subRegionData);
+      });
+      return region;
+    };
+    this.region = regionRehydrator(data.region);
   }
 
   orderByTopLeft(a,b){
@@ -32,7 +74,8 @@ class PageLayoutAnalyzer {
   orderByLeft(a,b){ return a.cssStyles.left - b.cssStyles.left; }
 
   _calculateRegion() {
-    let canvasRegion = new Region(this.bounds);
+    this._calculateStyles();
+    let canvasRegion = new Region(this.bounds, this.items);
     return canvasRegion;
   }
 
@@ -47,8 +90,8 @@ class PageLayoutAnalyzer {
   }
 
   _calculateStyles() {
-    this.textItems.forEach(item => item.calculateDimensions(this.transform, this.scale) );
-    return { items: this.textItems, styles: this.styles };
+    this.items.forEach(item => item.calculateDimensions(this.transform, this.scale) );
+    return { items: this.items, styles: this.styles };
   }
 
   _calculateWhiteSpace(){
@@ -62,9 +105,9 @@ class PageLayoutAnalyzer {
   groupRegions() {
     // this needs to be called after _calculateStyles called so that
     // the items have defined offsetWidth, offsetHeight, offsetTop and offsetLeft
-    this.region.setItems(this.textItems);
+    this.region.setItems(this.items);
     this.region.setObstacles(this.whiteSpaces);
-    this.regions = this.region.partitionByObstacles();
+    this.region.partitionByObstacles();
   }
 
   sort() { return this.items.sort(this.orderByTopLeft); }
@@ -76,7 +119,7 @@ class PageLayoutAnalyzer {
       return region;
     }); */
     let itemRegions = this.sort().map(data => new TextItem(data, this.styles));
-    itemRegions = this.textItems;
+    itemRegions = this.items;
     
     // get all of the strings that are all caps.
     let allCaps = itemRegions.filter((item)=>{
@@ -114,7 +157,7 @@ class PageLayoutAnalyzer {
     let resultItems = [...countedItems,...unaccountedItems];
     let allItems = itemRegions;
     const identical = (arr1, arr2) => arr1.every(i=>arr2.includes(i)) && arr2.every(i=>arr1.includes(i));
-    if (!(identical(allItems,resultItems) && identical(allItems, this.textItems))) { debugger; }
+    if (!(identical(allItems,resultItems) && identical(allItems, this.items))) { debugger; }
     let unaccountedItemRegions = itemRegions.filter( r => unaccountedItems.includes(r));
     let result = [...capsLines, ...unaccountedItemRegions].sort(this.orderByTopLeft);
     //this.region.setItems(result);

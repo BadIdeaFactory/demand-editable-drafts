@@ -1,10 +1,14 @@
+import PageLayoutAnalyzer from './pdf/page-layout-analyzer';
 import PromiseWorker from 'promise-worker';
+
+const worker = new Worker('/layout.worker.js');
+const promiseWorker = new PromiseWorker(worker);
 
 class LayoutAnalyzer {
   constructor() {
     //this.queue = new AnalysisQueue({workerPath: '/layout.worker.js'});
-    this.worker = new Worker('/layout.worker.js');
-    this.promiseWorker = new PromiseWorker(this.worker);
+    this.worker = worker;
+    this.promiseWorker = promiseWorker;
   }
 
   async analyzePage(page, width, height, scale=1.0) {
@@ -20,7 +24,12 @@ class LayoutAnalyzer {
         height: height,
       },
     };
-    return (await this.promiseWorker.postMessage(request));
+    const resultData = await this.promiseWorker.postMessage(request);
+    // UGHHHHHHHHHHGHGHGHHGHGGHHGHGHGHGFHJKGZHdlfkjgHFLKJGH
+    // Set up a rehydration mechanism for the vanilla objects that get passed back.
+    // UGHGHGHGHHGHGHGHGHFHGHGHUGUTGHTUIGHZVNBJFKHJKSDG
+    const analyzer = new PageLayoutAnalyzer(null, null, null, null, null, {rehydrate:true, data:resultData});
+    return analyzer;
   }
 }
 
