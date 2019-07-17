@@ -5,6 +5,7 @@ import Utils from './utils';
 import BillPage from './bill-page';
 import BillParagraph from './bill-paragraph';
 import BillLine from './bill-line';
+import LayoutAnalyzer from '../layout-analyzer';
 
 // This class wraps and controls a `pdfjs` document and it's canvas.
 class BillDocument {
@@ -15,6 +16,7 @@ class BillDocument {
     this.currentPageNumber = 1;
     this._pages = [];
     this.commonObjs = {};
+    this.analyzer = new LayoutAnalyzer();
   }
 
   async init() {
@@ -30,17 +32,16 @@ class BillDocument {
   async calculateLayout(options={}) {
     if (options.force || this._pages.length == 0) {
       const pages = [];
+      const canvas = document.createElement('canvas');
+      const context = canvas.getContext('2d');
       for (let pageNumber = 1; pageNumber <= this.pageCount ; pageNumber++) {
         const page = await this.getPage(pageNumber);
         const viewport = page.getViewport({scale:this.scale});
-        const canvas = document.createElement('canvas');
         canvas.height = viewport.height;
         canvas.width  = viewport.width;
-        const context = canvas.getContext('2d');
 
-        const textItems = await page.getTextContent({normalizeWhiteSpace: true});
-        const analyzer = new PageLayoutAnalyzer(textItems, viewport.transform, context.canvas.width, context.canvas.height);
-        pages.push(analyzer.calculateLayout());
+        const layout = await this.analyzer.analyzePage(page, context.canvas.width, context.canvas.height);
+        pages.push(layout);
         // commonObjs is where the fonts live.
         // page.commonObjs isn't populated unless you get the operator list.
         await page.getOperatorList();

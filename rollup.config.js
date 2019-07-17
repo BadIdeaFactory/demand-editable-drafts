@@ -17,8 +17,7 @@ export default [
 		context: 'window',
 		plugins: [
 			resolve(),
-			commonjs(),
-			production && terser()
+			commonjs()
 		]
 	},
 	{
@@ -30,8 +29,7 @@ export default [
 		},
 		plugins: [
 			resolve(),
-			commonjs(),
-			production && terser()
+			commonjs()
 		]
 	},
 	{

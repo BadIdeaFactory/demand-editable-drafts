@@ -9,7 +9,7 @@ const Actions = {
 
 function listener(message){
   console.log(`REQUEST MADE: ${new Date()}`);
-  console.log(message);
+  //console.log(message);
   const actionClass = Actions[message.action];
   const job = new actionClass(null,message.data,{progress:true});
   const result = job.process(message.data);

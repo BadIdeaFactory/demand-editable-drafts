@@ -7,7 +7,7 @@ class LayoutAnalyzer {
     this.promiseWorker = new PromiseWorker(this.worker);
   }
 
-  async analyze(page, width, height, scale=1.0) {
+  async analyzePage(page, width, height, scale=1.0) {
     const viewport = page.getViewport({scale: scale});
     const textItems = await page.getTextContent({normalizeWhiteSpace: true});
     const request = {
