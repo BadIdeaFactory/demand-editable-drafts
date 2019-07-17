@@ -17,7 +17,8 @@ class LayoutAnalyzer {
         height: height,
       },
     };
-    this.queue.send(request);
+    // it would be nice if this was just `await send(request)`
+    this.queue.sendRequest(request);
   }
 }
 

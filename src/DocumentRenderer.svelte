@@ -26,7 +26,7 @@
   export let billAnalyzer;
   export let layoutAnalyzer;
   
-  import TextLayoutAnalyzer from './pdf/text-layout-analyzer.js';
+  import PageLayoutAnalyzer from './pdf/text-layout-analyzer.js';
   import BillDocument from './bill/bill-document.js';
   import docx from 'docx';
   import FileSaver from 'file-saver';
@@ -42,9 +42,9 @@
     External API for manipulating pages.
   */
 
-  export async function getTextLayoutAnalyzer(){
+  export async function getPageLayoutAnalyzer(){
     const text = await getText();
-    layoutAnalyzer = new TextLayoutAnalyzer(text, viewport.transform, viewport.scale, pageCanvas.width, pageCanvas.height);
+    layoutAnalyzer = new PageLayoutAnalyzer(text, viewport.transform, viewport.scale, pageCanvas.width, pageCanvas.height);
     return layoutAnalyzer;
   }
 
@@ -57,7 +57,7 @@
   }
 
   export async function drawTextBounds() {
-    let layoutAnalyzer = await getTextLayoutAnalyzer();
+    let layoutAnalyzer = await getPageLayoutAnalyzer();
     layoutAnalyzer._calculateStyles();
 
     let textLayer = document.createElement('div');
@@ -65,7 +65,7 @@
       height: ${pageCanvas.height}px; 
       width: ${pageCanvas.width}px;`;
 
-    layoutAnalyzer.appendTextElementsTo(textLayer);
+    layoutAnalyzer.appendTextElementsTo(textLayer, ctx);
     replaceTextLayer(textLayer);
     layoutAnalyzer.appendWhiteSpaceTo(textLayer);
     return layoutAnalyzer;

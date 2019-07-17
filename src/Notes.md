@@ -4,7 +4,7 @@ This is a scratch pad for research notes.
 
 ## Todos
 
-- [ ] Split TextLayoutAnalyzer into two functions, item extraction and layout analysis
+- [ ] Split PageLayoutAnalyzer into two functions, item extraction and layout analysis
 - [ ] Create an wrapper class that extracts PDFjs items and turns them into regions.
 - [ ] Wrap layout analysis components in a web worker.
     - [ ] figure out how web workers er, work.  how does data get passed in?

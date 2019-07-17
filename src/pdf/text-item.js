@@ -94,7 +94,6 @@ class TextItem {
     let transform;
     let originalTransform;
     let transformString;
-    let styleString = '';
 
     if (context) {
       context.font = `${this.height}px ${this.fontFamily}`;

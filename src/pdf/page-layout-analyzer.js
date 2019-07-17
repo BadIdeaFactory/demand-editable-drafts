@@ -2,7 +2,7 @@ import Region from '../region';
 import MaximalRectangles from './whitespace/maximal-rectangles';
 import TextItem from './text-item';
 
-class TextLayoutAnalyzer {
+class PageLayoutAnalyzer {
   constructor(text, viewportTransform, viewportScale, width, height) {
     this.styles    = text.styles;
     this.items     = text.items;
@@ -159,4 +159,4 @@ class TextLayoutAnalyzer {
   }
 }
 
-export default TextLayoutAnalyzer;
+export default PageLayoutAnalyzer;

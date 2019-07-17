@@ -1,9 +1,9 @@
 import Action from "./action";
-import TextLayoutAnalyzer from "../pdf/text-layout-analyzer";
+import PageLayoutAnalyzer from "../pdf/text-layout-analyzer";
 
 class PageLayoutAction extends Action {
   async process({text, vpTransform, vpScale, width, height}){
-    const analyzer = new TextLayoutAnalyzer(text, vpTransform, vpScale, width, height);
+    const analyzer = new PageLayoutAnalyzer(text, vpTransform, vpScale, width, height);
     this.progress(0, `Calculating Item Styles`);
     analyzer._calculateStyles();
     this.progress(0.33, `Calculating White Space`);
