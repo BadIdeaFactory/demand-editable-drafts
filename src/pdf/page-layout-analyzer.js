@@ -1,4 +1,4 @@
-import Region from '../region';
+import Region from '../pdf/region';
 import MaximalRectangles from './whitespace/maximal-rectangles';
 import TextItem from './text-item';
 

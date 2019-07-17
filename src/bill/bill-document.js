@@ -1,6 +1,6 @@
 import PageLayoutAnalyzer from '../pdf/page-layout-analyzer';
 import docx from 'docx';
-import Region from '../region';
+import Region from '../pdf/region';
 import Utils from './utils';
 import BillPage from './bill-page';
 import BillParagraph from './bill-paragraph';
@@ -35,6 +35,7 @@ class BillDocument {
       const canvas = document.createElement('canvas');
       const context = canvas.getContext('2d');
       for (let pageNumber = 1; pageNumber <= this.pageCount ; pageNumber++) {
+        console.log(`Calculating layout for Page ${pageNumber} of ${this.pageCount}`);
         const page = await this.getPage(pageNumber);
         const viewport = page.getViewport({scale:this.scale});
         canvas.height = viewport.height;

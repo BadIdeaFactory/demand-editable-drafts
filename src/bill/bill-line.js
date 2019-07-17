@@ -1,6 +1,6 @@
 import docx from 'docx';
 import Utils from './utils';
-import Region from '../region';
+import Region from '../pdf/region';
 
 class BillLine {
   constructor(region, options = {}){

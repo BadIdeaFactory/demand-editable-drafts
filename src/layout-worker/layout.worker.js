@@ -8,12 +8,12 @@ const Actions = {
 };
 
 function listener(message){
-  console.log(`REQUEST MADE: ${new Date()}`);
+  //console.log(`REQUEST MADE: ${new Date()}`);
   //console.log(message);
   const actionClass = Actions[message.action];
   const job = new actionClass(null,message.data,{progress:true});
   const result = job.process(message.data);
-  console.log(`REQUEST COMPLETE: ${new Date()}`);
+  //console.log(`REQUEST COMPLETE: ${new Date()}`);
   return result;
 }
 

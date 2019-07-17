@@ -1,4 +1,4 @@
-import TextItem from './pdf/text-item';
+import TextItem from './text-item';
 
 class Region {
   constructor(params, items=[], obstacles=[]) {
