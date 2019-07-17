@@ -1851,6 +1851,11 @@ process-nextick-args@~2.0.0:
   resolved "https://registry.yarnpkg.com/process-nextick-args/-/process-nextick-args-2.0.0.tgz#a37d732f4271b4ab1ad070d35508e8290788ffaa"
   integrity sha512-MtEC1TqN0EU5nephaJ4rAtThHtC86dNN9qCuEhtshvpVBkAW5ZO7BASN9REnF9eoXGcRub+pFuKEpOHE+HbEMw==
 
+promise-worker@^2.0.1:
+  version "2.0.1"
+  resolved "https://registry.yarnpkg.com/promise-worker/-/promise-worker-2.0.1.tgz#63bb532624ecd40cdb335b51bb7830c3c892aa6c"
+  integrity sha512-jR7vHqMEwWJ15i9vA3qyCKwRHihyLJp1sAa3RyY5F35m3u5s2lQUfq0nzVjbA8Xc7+3mL3Y9+9MHBO9UFRpFxA==
+
 pump@^3.0.0:
   version "3.0.0"
   resolved "https://registry.yarnpkg.com/pump/-/pump-3.0.0.tgz#b4a2116815bde2f4e1ea602354e8c75565107a64"

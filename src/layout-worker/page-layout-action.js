@@ -1,8 +1,8 @@
 import Action from "./action";
-import PageLayoutAnalyzer from "../pdf/text-layout-analyzer";
+import PageLayoutAnalyzer from "../pdf/page-layout-analyzer";
 
 class PageLayoutAction extends Action {
-  async process({text, vpTransform, vpScale, width, height}){
+  process({text, vpTransform, vpScale, width, height}){
     const analyzer = new PageLayoutAnalyzer(text, vpTransform, vpScale, width, height);
     this.progress(0, `Calculating Item Styles`);
     analyzer._calculateStyles();

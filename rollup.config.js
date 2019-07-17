@@ -16,7 +16,9 @@ export default [
 		},
 		context: 'window',
 		plugins: [
-			commonjs({})
+			resolve(),
+			commonjs(),
+			production && terser()
 		]
 	},
 	{
@@ -26,7 +28,11 @@ export default [
 			file: 'public/layout.worker.js',
 			name: 'layoutWorker',
 		},
-		context: 'window'
+		plugins: [
+			resolve(),
+			commonjs(),
+			production && terser()
+		]
 	},
 	{
 		input: 'src/main.js',

@@ -26,7 +26,7 @@
   export let billAnalyzer;
   export let layoutAnalyzer;
   
-  import PageLayoutAnalyzer from './pdf/text-layout-analyzer.js';
+  import PageLayoutAnalyzer from './pdf/page-layout-analyzer.js';
   import BillDocument from './bill/bill-document.js';
   import docx from 'docx';
   import FileSaver from 'file-saver';

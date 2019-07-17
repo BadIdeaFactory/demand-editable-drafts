@@ -1,4 +1,4 @@
-import PageLayoutAnalyzer from '../pdf/text-layout-analyzer';
+import PageLayoutAnalyzer from '../pdf/page-layout-analyzer';
 import docx from 'docx';
 import Region from '../region';
 import Utils from './utils';

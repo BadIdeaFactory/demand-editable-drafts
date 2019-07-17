@@ -1,13 +1,16 @@
+import PromiseWorker from 'promise-worker';
+
 class LayoutAnalyzer {
   constructor() {
-    this.queue = new AnalysisQueue({workerPath: '/layout.worker.js'});
+    //this.queue = new AnalysisQueue({workerPath: '/layout.worker.js'});
+    this.worker = new Worker('/layout.worker.js');
+    this.promiseWorker = new PromiseWorker(this.worker);
   }
 
   async analyze(page, width, height, scale=1.0) {
     const viewport = page.getViewport({scale: scale});
     const textItems = await page.getTextContent({normalizeWhiteSpace: true});
     const request = {
-      job_id: 1,
       action: 'pageLayoutAction',
       data: {
         text: textItems,
@@ -17,38 +20,7 @@ class LayoutAnalyzer {
         height: height,
       },
     };
-    // it would be nice if this was just `await send(request)`
-    this.queue.sendRequest(request);
-  }
-}
-
-class AnalysisQueue {
-  constructor({workerPath}) {
-    this.worker = new Worker(workerPath);
-    this.worker.addEventListener('message', this.listen.bind(this));
-
-    this.queue = [];
-  }
-
-  listen(message) {
-    const messageData = message.data;
-    const { job_id, action, data } = messageData;
-    console.log('Recieved message from worker:', job_id, action, data);
-    //console.log('Recieved message from worker:', message);
-    // switch?
-  }
-
-  send(message) {
-    if (this.worker) {
-      this.worker.postMessage(message);
-    } else {
-      throw "Worker is unavailable (and probably closed)";
-    }
-  }
-
-  closeWorker() {
-    this.worker.terminate();
-    this.worker = null;
+    return (await this.promiseWorker.postMessage(request));
   }
 }
 
