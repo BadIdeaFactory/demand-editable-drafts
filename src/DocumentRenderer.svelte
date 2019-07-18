@@ -24,6 +24,7 @@
   let pageRendering = false;
   let pageNumPending = null;
   let hidePDFText = false;
+  let componentMounted = false;
   export let billAnalyzer;
   export let layoutAnalyzer;
   
@@ -109,15 +110,19 @@
     }
     return output;
   }
-  
+
   export async function getPage(num) {
+    pageNum = num;
+    requestedPageNumber = num;
+    renderPage();
+  }
+  
+  export async function renderPage() {
     pageRendering = true;
     clearTextLayer();
-
-    pageNum = num;
-    page = await pdfDoc.getPage(num);
+    page = await pdfDoc.getPage(pageNum);
     viewport = page.getViewport({scale: scale});
-    await renderPage(pageNum);
+    await drawPage(pageNum);
     let pageText = await drawTextBounds();
     //console.log(pageText.dumpText());
   };
@@ -130,7 +135,7 @@
   /*
     Internal API below this point.
   */
-  let renderPage = async (num) => {
+  let drawPage = async (num) => {
     if (!page) { await getPage(pageNum); };
     pageRendering = true;
     // Using promise to fetch the page
@@ -149,7 +154,7 @@
     pageRendering = false;
     if (pageNumPending !== null) {
       // New page rendering is pending
-      renderPage(pageNumPending);
+      drawPage(pageNumPending);
       pageNumPending = null;
     }
     // Update page counters
@@ -188,15 +193,26 @@
 	onMount(async () => {
     await loadDocument(data);
     ctx = pageCanvas.getContext('2d');
-    await getPage(pageNum);
     billAnalyzer = new BillDocument(pdfDoc, {scale: scale});
+    componentMounted = true;
     // console.log(billAnalyzer.getBillText());
   });
 
   onDestroy(() => { unloadDocument(); });
 
   $: {
-    console.log(requestedPageNumber);
+    if (componentMounted){
+      console.log(requestedPageNumber);
+      getPage(requestedPageNumber);
+    }
+  }
+
+  $: {
+    if (pageRendering) {
+      console.log("Rendering Page");
+    } else {
+      console.log("Done Rendering Page");
+    }
   }
 </script>
 
@@ -206,6 +222,7 @@
       bind:hidePDFText
       bind:requestedPageNumber
       pageCount={pdfDoc.numPages}
+      dumpDocX={dumpDocX}
     />
     <div class="display-wrapper">
       <div class="text-layer-wrapper" class:hide={hidePDFText} bind:this={textLayerParent}>

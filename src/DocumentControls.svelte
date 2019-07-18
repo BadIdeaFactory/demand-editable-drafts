@@ -9,13 +9,10 @@
     else { requestedPageNumber = pageCount; }
   };
 
-  export function dumpDocX() {
-    console.log("DumpDocX!")
-  }
-
   export let requestedPageNumber = 1;
   export let hidePDFText = false;
   export let pageCount;
+  export let dumpDocX;
 </script>
 
 <header>
