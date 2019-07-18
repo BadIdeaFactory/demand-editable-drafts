@@ -71,7 +71,6 @@ class PageLayoutAnalyzer {
       return a.top - b.top;
     }
   }
-  orderByLeft(a,b){ return a.cssStyles.left - b.cssStyles.left; }
 
   _calculateRegion() {
     this._calculateStyles();
@@ -128,7 +127,10 @@ class PageLayoutAnalyzer {
 
     let merge = (caps) => {
       // Find any items which overlap vertically with `caps`
-      const sameLine = (a, b) => a.intersects(b, {onlyVertically: true});
+      const sameLine = (a, b) => {
+        const opts = (a.degrees && a.degrees == 90) ? {onlyHorizontally: true} : {onlyVertically: true} ;
+        return a.intersects(b, opts);
+      };
       const capsLineRegions = itemRegions.filter((item) => {
         //debugger;
         return (item === caps || ( item.fontName == caps.fontName && sameLine(caps, item)));

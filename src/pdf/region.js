@@ -252,8 +252,10 @@ class Region {
 
   groupItems() {
     let groupByLine = (lines, item) => {
-      let overlap = lines.find(line => line.intersects(item));
-      if (!overlap) {
+      let overlap = lines.find(line =>{ 
+        return line.intersects(item) && line.items.every(i => i.angle == item.angle);
+      });
+      if (!overlap || item.degrees) {
         overlap = new Region({
           top: item.top,
           bottom: item.bottom,
