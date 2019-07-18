@@ -14,7 +14,7 @@ class BillDocument {
     this.scale             = (options.scale || 1);
     this.pageCount         = this.pdf.numPages;
     this.currentPageNumber = 1;
-    this._pages = [];
+    this.pages = [];
     this.commonObjs = {};
     this.analyzer = new LayoutAnalyzer();
   }
@@ -30,30 +30,37 @@ class BillDocument {
   }
 
   async calculateLayout(options={}) {
-    if (options.force || this._pages.length == 0) {
+    if (options.force || this.pages.length == 0) {
       const pages = [];
-      const canvas = document.createElement('canvas');
-      const context = canvas.getContext('2d');
       for (let pageNumber = 1; pageNumber <= this.pageCount ; pageNumber++) {
-        if (this.cancel) { console.log('calculateLayout canceled'); return false; }
-        console.log(`Calculating layout for Page ${pageNumber} of ${this.pageCount}`);
-        const page = await this.getPage(pageNumber);
-        const viewport = page.getViewport({scale:this.scale});
-        canvas.height = viewport.height;
-        canvas.width  = viewport.width;
-
-        const layout = await this.analyzer.analyzePage(page, context.canvas.width, context.canvas.height);
-        pages.push(layout);
-        // commonObjs is where the fonts live.
-        // page.commonObjs isn't populated unless you get the operator list.
-        await page.getOperatorList();
-        Object.keys(page.commonObjs._objs).forEach((key) => {
-          this.commonObjs[key] = page.commonObjs._objs[key];
-        });
+        if (this.cancel) { 
+          console.log('calculateLayout canceled'); 
+          delete this.cancel;
+          return false;
+        }
+        const page = await this.calculatePageLayout(pageNumber);
+        pages.push(page);
+        if (options.callback) { options.callback(pageNumber, page); }
       }
-      this._pages = pages.map(p=>new BillPage(p));
+      this.pages = pages;
     }
-    return this._pages;
+    return this.pages;
+  }
+
+  async calculatePageLayout(pageNumber,options={}) {
+    const pdfPage = await this.getPage(pageNumber);
+    const viewport = pdfPage.getViewport({scale:this.scale});
+    const layout = await this.analyzer.analyzePage(pdfPage, viewport.width, viewport.height);
+    // commonObjs is where the fonts live.
+    // page.commonObjs isn't populated unless you get the operator list.
+    await pdfPage.getOperatorList();
+    Object.keys(pdfPage.commonObjs._objs).forEach((key) => {
+      this.commonObjs[key] = pdfPage.commonObjs._objs[key];
+    });
+    const page = new BillPage(layout);
+    page.pageNumber = pageNumber;
+    page.region.pageNumber = pageNumber;
+    return page;
   }
 
   mungeLine(lineRegion){
@@ -94,12 +101,13 @@ class BillDocument {
 
   process() {
     const isBillTextParent = (region) => {
-      if (region.obstacles.length > 0) {
+      if (Object.keys(region.regions).length > 0) {
         // bill text is always numbered.
         // The numbers will be in the left region.
         let left  = region.regions.left; // has no obstacles, only has text regions that are numbers
         let right = region.regions.right; // has text.
 
+        if (!(left && left.obstacles)) { debugger; }
         let noObstaclesOnLeft    = left.obstacles.length == 0;
         let leftTextIsNumberList = left.items.every(i => i.getText().match(/^\d+$/)); // should this consider position
         let rightHasText         = right.items.length > 0;
@@ -118,6 +126,7 @@ class BillDocument {
 
     const walk = (region, path=[]) => {
       const childRegions = region.regions;
+      Object.values(childRegions).forEach(r => r.pageNumber = state.currentPage.pageNumber);
       const orderedKeys = ['top', 'left', 'right', 'bottom'];
       if (isBillTextParent(region)) {
         if (state.sections.main.length == 0) {
@@ -150,7 +159,7 @@ class BillDocument {
     };
 
     let state = { mainMargins:[], pages: [], sections: { before: [], main: [], after:[] } };
-    this._pages.forEach(page =>{
+    this.pages.forEach(page =>{
       page.initializeSections();
       state.currentPage = page;
       walk(page.region);
