@@ -3,32 +3,11 @@
 <script>
 	import documentStore from './DocumentStore.js';
 	import DocumentRenderer from './DocumentRenderer.svelte';
-	import FilePicker from './FilePicker.svelte'
-	import FileCard from './FileCard.svelte'
+	import FilePicker from './FilePicker.svelte';
+	import FileCard from './FileCard.svelte';
 	
 	export let picker;
 	export let renderer;
-	let tessWorker
-
-	let ocr = () => {
-		if (!tessWorker) { tessWorker = new Tesseract.TesseractWorker(); }
-		let myImage = renderer.getCanvas();
-		tessWorker.recognize(myImage)
-  		.progress(message => console.log(message))
-  		.catch(err => console.error(err))
-  		.then(result => console.log(result))
-  		.finally(resultOrError => console.log(resultOrError));
-	}
-
-	import LayoutAnalyzer from './layout-analyzer';
-
-	let layoutAnalyzer;
-	export let startWorkerInterface = () => {
-		if (!layoutAnalyzer) {
-			layoutAnalyzer = new LayoutAnalyzer();
-		}
-		return layoutAnalyzer;
-	};
 </script>
 
 <main>

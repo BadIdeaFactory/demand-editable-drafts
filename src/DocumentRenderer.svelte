@@ -12,26 +12,28 @@
     fileName = `demand-progress-download-${nowString}`;
   }
 
-  let pdfDoc;      // the pdf proxy object loaded by pdf.js
-  let page;        // the current page of the pdf we've loaded.
-  let viewport;    // the pdf.js viewport object for the current page
-  let container;   // the container element for our various elements.
-  let pageCanvas;  // the canvas element the viewport is drawn into
+  let pdfDoc;             // the pdf proxy object loaded by pdf.js
+  let page;               // the current page of the pdf we've loaded.
+  let viewport;           // the pdf.js viewport object for the current page
+  let textLayerParent;    // the textLayer textLayerParent for our various elements.
+  let pageCanvas;         // the canvas element the viewport is drawn into
   let ctx;                // the canvas context object
   let scale = 1.3;        // the presentational scale for the page
   let pageNum = 1;        // default to the first page of the PDF.
+  let requestedPageNumber = 1;
   let pageRendering = false;
   let pageNumPending = null;
   let hidePDFText = false;
   export let billAnalyzer;
   export let layoutAnalyzer;
   
+  import DocumentControls from './DocumentControls.svelte';
   import PageLayoutAnalyzer from './pdf/page-layout-analyzer.js';
   import BillDocument from './bill/bill-document.js';
   import docx from 'docx';
   import FileSaver from 'file-saver';
 
-	import { afterUpdate, onMount, onDestroy } from 'svelte';
+	import { onMount, onDestroy } from 'svelte';
 	// well this bit is a crazy mess
 	// See: https://github.com/mozilla/pdf.js/issues/10317
 	// and https://github.com/bundled-es-modules/pdfjs-dist
@@ -125,24 +127,6 @@
     return await getPageText(pageNum);
   };
 
-  export async function pdfJSDrawTextBounds(itemNumber) {
-    if (!page) { await getPage(pageNum); };
-    let items = await page.getTextContent();
-    let textLayer = await document.createElement('div');
-    textLayer.style = `
-      height: ${pageCanvas.height}px; 
-      width: ${pageCanvas.width}px;`;
-    replaceTextLayer(textLayer);
-    // Just cheat by asking `pdfjs` to do it's default thing.
-    // It'll draw a series of spans into the container
-    await pdfjs.renderTextLayer({
-      textContent: items,
-      container: textLayer,
-      viewport: viewport,
-      textDivs: []
-    });
-  };
-
   /*
     Internal API below this point.
   */
@@ -177,18 +161,6 @@
     return await page.getTextContent({normalizeWhiteSpace: true});
   };
 
-  let previousPage = async () => {
-    if (pageNum > 1) { pageNum = pageNum - 1; }
-    else { pageNum = 1; }
-    await getPage(pageNum);
-  };
-
-  let nextPage = async() => {
-    if (pageNum < pdfDoc.numPages) { pageNum = pageNum + 1; }
-    else { pageNum = pdfDoc.numPages; }
-    await getPage(pageNum);
-  };
-
   let loadDocument = async (source) => {
     pdfDoc = await pdfjs.getDocument(source).promise;
   };
@@ -209,7 +181,7 @@
   let replaceTextLayer = (node) => {
     let textLayer = ( node || document.createElement('div') );
     let currentTextLayer = document.getElementById('pdfjs-text-layer');
-    container.replaceChild(textLayer, currentTextLayer);
+    textLayerParent.replaceChild(textLayer, currentTextLayer);
     textLayer.id = 'pdfjs-text-layer';
   };
 
@@ -222,25 +194,21 @@
   });
 
   onDestroy(() => { unloadDocument(); });
+
+  $: {
+    console.log(requestedPageNumber);
+  }
 </script>
 
 <div class="page-wrapper">
   {#if pdfDoc }
-    <header>
-      <nav>
-        <button on:click|preventDefault={previousPage} >previous</button>
-        <p>Page {pageNum} of {pdfDoc.numPages}</p>
-        <button on:click|preventDefault={nextPage}>next</button>
-      </nav>
-      <nav>
-        <button on:click|preventDefault={dumpDocX}>download docx</button>
-        <button on:click|preventDefault={() => { hidePDFText = (! hidePDFText); } } >
-          {(hidePDFText) ? 'show' : 'hide' } pdfjs text
-        </button>
-      </nav>
-    </header>
+    <DocumentControls 
+      bind:hidePDFText
+      bind:requestedPageNumber
+      pageCount={pdfDoc.numPages}
+    />
     <div class="display-wrapper">
-      <div class="text-layer-wrapper" class:hide={hidePDFText} bind:this={container}>
+      <div class="text-layer-wrapper" class:hide={hidePDFText} bind:this={textLayerParent}>
         <div id="pdfjs-text-layer"></div>
       </div>
       <canvas bind:this={pageCanvas}></canvas>
@@ -254,23 +222,6 @@
   .page-wrapper {
     padding: 10px;
     background-color: #ccc;
-  }
-
-  .page-wrapper header {
-    display: flex;
-    justify-content: space-between
-  }
-
-  .page-wrapper header nav {
-    display: flex;
-  }
-
-  nav button {
-    cursor: pointer;
-  }
-
-  .page-wrapper header p {
-    vertical-align: middle;
   }
 
   :global(#pdfjs-text-layer) { 
