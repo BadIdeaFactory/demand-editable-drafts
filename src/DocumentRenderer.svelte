@@ -51,8 +51,12 @@
     return layoutAnalyzer;
   }
 
+  let dumpDocXProgress;
   export async function dumpDocX() {
-    if (await billAnalyzer.calculateLayout()) {
+    const progressLogger = (pageNumber, layout) => { 
+      dumpDocXProgress = pageNumber / pdfDoc.numPages;
+    };
+    if (await billAnalyzer.calculateLayout({ callback: progressLogger })) {
       const blob = new Blob(
         [await billAnalyzer.dumpDocX()], 
         {type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'}
@@ -214,6 +218,9 @@
       console.log("Done Rendering Page");
     }
   }
+
+  $: console.log(`${dumpDocXProgress*100}% complete analyzing document.`);
+
 </script>
 
 <div class="page-wrapper">
