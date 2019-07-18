@@ -24,7 +24,7 @@ class BillParagraph {
 
   setStyle(style){
     const newStyles = {};
-    const styleKeys = ['fontSize', 'fontName', 'margin'];
+    const styleKeys = ['fontSize', 'fontName', 'margin', 'lineSpacingBefore'];
     if (style) { styleKeys.forEach(key => newStyles[key] = style[key]); }
     this.styles = newStyles;
     return this.styles;
@@ -69,7 +69,9 @@ class BillParagraph {
       let twips = Utils.pixelsToTwips(this.styles.margin);
       graf = graf.indent({firstLine: twips,});
     }
-    graf = graf.spacing({before: 240});
+    
+    const spacingBefore = (this.styles.lineSpacingBefore) ? this.styles.lineSpacingBefore : 240;
+    graf = graf.spacing({before: spacingBefore});
     doc.addParagraph(graf);
   }
 }

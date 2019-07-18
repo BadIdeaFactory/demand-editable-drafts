@@ -99,7 +99,7 @@ class BillDocument {
     return resultText;
   }
 
-  process() {
+  process(options={}) {
     const isBillTextParent = (region) => {
       if (Object.keys(region.regions).length > 0) {
         // bill text is always numbered.
@@ -129,6 +129,7 @@ class BillDocument {
       Object.values(childRegions).forEach(r => r.pageNumber = state.currentPage.pageNumber);
       const orderedKeys = ['top', 'left', 'right', 'bottom'];
       if (isBillTextParent(region)) {
+        // This region contains line numbers on the left, and bill text on the right.
         if (state.sections.main.length == 0) {
           walk(childRegions.top, [...path, 'top']);
         }
@@ -140,6 +141,7 @@ class BillDocument {
         childRegions.right.regions = {}; // disregard partitions inside of main region.
         state.currentPage.main.text.push(childRegions.right.getText({line:this.mungeLine}));
         state.mainMargins.push(state.currentPage.main.margin);
+
         //walk(childRegions.bottom, [...path, 'bottom']);
       } else if (Object.entries(childRegions).length > 0) {
         orderedKeys.map(key =>{ 
@@ -151,15 +153,22 @@ class BillDocument {
           state.currentPage.after.regions.push(region);
           state.sections.after.push(region);
         } else {
-          state.currentPage.before.text.push(region.getText({line:this.mungeLine}));
-          state.currentPage.before.regions.push(region);
-          state.sections.before.push(region);
+          const sectionKey = (state.sections.main.length > 0 ? 'main' : 'before');
+          state.currentPage[sectionKey].text.push(region.getText({line:this.mungeLine}));
+          state.currentPage[sectionKey].regions.push(region);
+          state.sections[sectionKey].push(region);
         }
       }
     };
 
     let state = { mainMargins:[], pages: [], sections: { before: [], main: [], after:[] } };
     this.pages.forEach(page =>{
+      if (options.callback) { options.callback(page.pageNumber, page); }
+      if (this.cancel) { 
+        console.log('calculateLayout canceled'); 
+        delete this.cancel;
+        return false;
+      }
       page.initializeSections();
       state.currentPage = page;
       walk(page.region);
@@ -218,12 +227,26 @@ class BillDocument {
         let leftEdge = (region.left - (region.margin || 0));
         // margin accounts for some of the whitespace so move the left edge to the right.
         if (section.name == "header") { leftEdge += Utils.defaultMargin;}
-        const lines = region.groupItems().map(l=>{ 
-          const leftMargin = l.left - leftEdge;
-          return new BillLine(l, {margin: leftMargin, fonts: this.commonObjs });
-        });
+        const lines = region.groupItems().reduce((billLines, lineRegion)=>{
+          const previousLine = billLines[billLines.length-1];
+          let spacingBefore = 0;
+          if (previousLine) { 
+            spacingBefore = lineRegion.top - previousLine.region.bottom;
+            //if (spacingBefore < 0) { debugger; }
+          }
+          const leftMargin = lineRegion.left - leftEdge;
+          const attrs = {
+            margin: leftMargin, 
+            fonts: this.commonObjs,
+            lineSpacingBefore: Utils.pixelsToTwips(spacingBefore),
+          };
+          const billLine = new BillLine(lineRegion, attrs);
+          billLines.push(billLine);
+          return billLines;
+        }, []);
         const paragraphs = lines.reduce((grafs, line) => {
           let currentGraf = grafs[grafs.length-1];
+          // skip this function for now.  Every line is its own graf.
           if (currentGraf && line.stylesMatch(currentGraf) && false) {
             currentGraf.appendLine(line);
           } else {
@@ -247,15 +270,11 @@ class BillDocument {
       return section;
     };
     
-    const billData = this.process();
+    const billData = this.process({callback: options.progressCallback});
+    if (!billData) { return false; } // this is the cancel mechanism.
     // walk the region tree
     const billHeader = billData.sections.before;
     const billMain = billData.sections.main;
-
-    let doc =  new docx.Document();
-
-    const headerLines = billHeader.reduce(processSection, 
-      { name:"header", doc: doc });
 
     let margins = billMain.reduce((arr, r)=>{
       if (r instanceof Region) { arr.push(r.margin); }
@@ -263,12 +282,16 @@ class BillDocument {
     }, []);
 
     const numberingSpacing = margins.sort()[0];
-    // start the main section.
-    doc.addSection({
+    let doc =  new docx.Document(undefined, {
       lineNumberCountBy: 1,
       lineNumberRestart: docx.LineNumberRestartFormat.NEW_PAGE,
       lineNumberDistance: Utils.pixelsToTwips(numberingSpacing),
     });
+
+    const headerLines = billHeader.reduce(processSection, 
+      { name:"header", doc: doc });
+
+    // start the main section.
     const mainLines = billMain.reduce(processSection, 
       { name:"main", doc: doc });
 

@@ -54,15 +54,25 @@
   let dumpDocXProgress;
   export async function dumpDocX() {
     const progressLogger = (pageNumber, layout) => { 
-      dumpDocXProgress = pageNumber / pdfDoc.numPages;
+      dumpDocXProgress = (pageNumber / pdfDoc.numPages);
     };
-    if (await billAnalyzer.calculateLayout({ callback: progressLogger })) {
-      const blob = new Blob(
-        [await billAnalyzer.dumpDocX()], 
-        {type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'}
-      );
-      FileSaver.saveAs(blob, fileName.replace(/pdf$/, 'docx'));
+    try {
+      if (await billAnalyzer.calculateLayout({ callback: progressLogger })) {
+        const opts = {
+          progressCallback: progressLogger,
+        }
+        const blob = new Blob(
+          [await billAnalyzer.dumpDocX(opts)], 
+          {type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'}
+        );
+        FileSaver.saveAs(blob, fileName.replace(/pdf$/, 'docx'));
+      }
+    } catch (error) {
+      console.error("OH NO SOMETHING WENT WRONG");
+      console.log(error);
+      debugger;
     }
+    dumpDocXProgress = undefined;
   }
 
   export async function drawTextBounds() {

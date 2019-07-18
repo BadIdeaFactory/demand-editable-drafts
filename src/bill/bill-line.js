@@ -10,6 +10,7 @@ class BillLine {
     this.styles  = {
       margin: options.margin,
       fonts:  options.fonts,
+      lineSpacingBefore: options.lineSpacingBefore,
     };
     this.runs    = [];
     this.analyze();

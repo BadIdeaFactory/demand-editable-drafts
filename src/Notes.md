@@ -4,11 +4,15 @@ This is a scratch pad for research notes.
 
 ## Todos
 
-- [ ] Split PageLayoutAnalyzer into two functions, item extraction and layout analysis
-- [ ] Create an wrapper class that extracts PDFjs items and turns them into regions.
-- [ ] Wrap layout analysis components in a web worker.
-    - [ ] figure out how web workers er, work.  how does data get passed in?
-    - [ ] 
+- [x] Split PageLayoutAnalyzer into two functions, item extraction and layout analysis
+- [x] Create an wrapper class that extracts PDFjs items and turns them into regions.
+- [x] Wrap layout analysis components in a web worker.
+    - [x] figure out how web workers er, work.  how does data get passed in?
+    - [x] Figure out how to pass data back & rehydrate it.
+- [ ] review page parsing.
+    - [ ] interstitial sections are unnumbered & cause difficulty when present on pages w/ numbering.
+    - [ ] header & footer detection will need to be fleshed out substantially
+    - [ ] Attempt line numbering using numbered lists
 
 ## pdf.js
 
