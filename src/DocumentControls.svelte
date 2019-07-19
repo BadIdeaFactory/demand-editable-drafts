@@ -13,6 +13,7 @@
   export let hidePDFText = false;
   export let pageCount;
   export let dumpDocX;
+  export let dumpingDocument;
 </script>
 
 <header>
@@ -22,9 +23,15 @@
     <button on:click|preventDefault={nextPage}>next</button>
   </nav>
   <nav>
-    <button on:click|preventDefault={dumpDocX}>download docx</button>
-    <button on:click|preventDefault={() => { hidePDFText = (! hidePDFText); } } >
-      {(hidePDFText) ? 'show' : 'hide' } pdfjs text
+    <button id="showTextBoxes" on:click|preventDefault={() => { hidePDFText = (! hidePDFText); } } >
+      {(hidePDFText) ? 'show' : 'hide' } text boxes
+    </button>
+    <button id="download" on:click|preventDefault={dumpDocX}>
+      {#if dumpingDocument}
+      cancel download
+      {:else}
+      download docx
+      {/if}
     </button>
   </nav>
 </header>

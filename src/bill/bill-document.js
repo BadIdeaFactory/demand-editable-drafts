@@ -166,9 +166,9 @@ class BillDocument {
     let state = { mainMargins:[], pages: [], sections: { before: [], main: [], after:[] } };
     this.pages.forEach(page =>{
       if (options.callback) { options.callback(page.pageNumber, page); }
-      if (this.cancel) { 
+      if (this.cancelToken) { 
         console.log('calculateLayout canceled'); 
-        delete this.cancel;
+        delete this.cancelToken;
         return false;
       }
       page.initializeSections();

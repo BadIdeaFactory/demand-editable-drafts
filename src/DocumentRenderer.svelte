@@ -23,8 +23,9 @@
   let requestedPageNumber = 1;
   let pageRendering = false;
   let pageNumPending = null;
-  let hidePDFText = false;
+  let hidePDFText = true;
   let componentMounted = false;
+  let notification = {};
   export let billAnalyzer;
   export let layoutAnalyzer;
   
@@ -34,7 +35,9 @@
   import docx from 'docx';
   import FileSaver from 'file-saver';
 
-	import { onMount, onDestroy } from 'svelte';
+  import { onMount, onDestroy } from 'svelte';
+  import { fade } from 'svelte/transition';
+
 	// well this bit is a crazy mess
 	// See: https://github.com/mozilla/pdf.js/issues/10317
 	// and https://github.com/bundled-es-modules/pdfjs-dist
@@ -51,28 +54,48 @@
     return layoutAnalyzer;
   }
 
-  let dumpDocXProgress;
+	import { tweened } from 'svelte/motion';
+	import { cubicOut } from 'svelte/easing';
+  let analyzeLayoutProgress;
+  let analyzeRegionProgress;
+  let dumpingDocument;
   export async function dumpDocX() {
-    const progressLogger = (pageNumber, layout) => { 
-      dumpDocXProgress = (pageNumber / pdfDoc.numPages);
-    };
-    try {
-      if (await billAnalyzer.calculateLayout({ callback: progressLogger })) {
-        const opts = {
-          progressCallback: progressLogger,
+    if (dumpingDocument) {
+      console.log(`Already dumping document: ${dumpingDocument}`);
+      billAnalyzer.cancel();
+    } else {
+      dumpingDocument = true;
+      const analyzerProgressLogger = (pageNumber, layout) => { 
+        analyzeLayoutProgress = (pageNumber / pdfDoc.numPages);
+      };
+      const regionProgressLogger = (pageNumber, layout) => { 
+        analyzeRegionProgress = (pageNumber / pdfDoc.numPages);
+      };
+
+      try {
+        setNotification("Analyzing Page Layout");
+        if (await billAnalyzer.calculateLayout({ callback: analyzerProgressLogger })) {
+          analyzeLayoutProgress = undefined;
+          const opts = {
+            progressCallback: regionProgressLogger,
+          }
+          setNotification("Converting to Word");
+          const blob = new Blob(
+            [await billAnalyzer.dumpDocX(opts)], 
+            {type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'}
+          );
+          analyzeRegionProgress = undefined;
+          FileSaver.saveAs(blob, fileName.replace(/pdf$/, 'docx'));
         }
-        const blob = new Blob(
-          [await billAnalyzer.dumpDocX(opts)], 
-          {type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'}
-        );
-        FileSaver.saveAs(blob, fileName.replace(/pdf$/, 'docx'));
+      } catch (error) {
+        console.error("OH NO SOMETHING WENT WRONG");
+        console.log(error);
+        setNotification("We encountered an error.")
       }
-    } catch (error) {
-      console.error("OH NO SOMETHING WENT WRONG");
-      console.log(error);
-      debugger;
+      analyzeLayoutProgress = undefined;
+      dumpingDocument = false;
     }
-    dumpDocXProgress = undefined;
+    clearNotification();
   }
 
   export async function drawTextBounds() {
@@ -229,8 +252,36 @@
     }
   }
 
-  $: console.log(`${dumpDocXProgress*100}% complete analyzing document.`);
+  let layoutProgressVisible = false;
+  let analyzerProgress = tweened(0, { duration: 400, easing: cubicOut });
+  $: {
+    if (analyzeLayoutProgress) {
+      layoutProgressVisible = true;
+      analyzerProgress = tweened(analyzeLayoutProgress, { duration: 400, easing: cubicOut });
+    } else {
+      layoutProgressVisible = false;
+      analyzerProgress = tweened(0, { duration: 400, easing: cubicOut });
+    }
+    //console.log(`${analyzeLayoutProgress*100}% complete analyzing document.`);
+  }
+  let regionProgress = tweened(0, { duration: 400, easing: cubicOut });
+  $: {
+    regionProgress = tweened(analyzeRegionProgress, { duration: 400, easing: cubicOut });
+    //console.log(`${analyzeLayoutProgress*100}% complete analyzing document.`);
+  }
 
+  export const setNotification = (message) => {
+    if (message){
+      notification = {
+        message: message
+      };
+    } else {
+      notification = {};
+    }
+  }
+  export const clearNotification = () => { setNotification(undefined) }
+
+  let visible = true;
 </script>
 
 <div class="page-wrapper">
@@ -240,7 +291,17 @@
       bind:requestedPageNumber
       pageCount={pdfDoc.numPages}
       dumpDocX={dumpDocX}
+      dumpingDocument={dumpingDocument}
     />
+    {#if notification.message }
+      <p class="notification" in:fade out:fade >{notification.message}</p>
+    {/if}
+    {#if layoutProgressVisible }
+      <progress value={($analyzerProgress || 0)} in:fade out:fade ></progress>
+    {/if}
+    {#if analyzeRegionProgress }
+      <progress value={$regionProgress}></progress>
+    {/if}
     <div class="display-wrapper">
       <div class="text-layer-wrapper" class:hide={hidePDFText} bind:this={textLayerParent}>
         <div id="pdfjs-text-layer"></div>
@@ -274,8 +335,18 @@
     border: solid 1px black;
   }
 
-  .text-layer-wrapper.hide {
-    display: none;
+  .text-layer-wrapper.hide :global(#pdfjs-text-layer) :global(span) {
+    border: 0;
   }
+
+  progress {
+		display: block;
+		width: 100%;
+	}
+
+  .notification {
+    text-align: center;
+  }
+
 
 </style>
