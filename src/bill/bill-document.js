@@ -29,13 +29,15 @@ class BillDocument {
     } else { throw "pageNumber must be within the range of 1 to pageCount."; }
   }
 
+  cancel() { this.cancelToken = true; }
+
   async calculateLayout(options={}) {
     if (options.force || this.pages.length == 0) {
       const pages = [];
       for (let pageNumber = 1; pageNumber <= this.pageCount ; pageNumber++) {
-        if (this.cancel) { 
+        if (this.cancelToken) { 
           console.log('calculateLayout canceled'); 
-          delete this.cancel;
+          delete this.cancelToken;
           return false;
         }
         const page = await this.calculatePageLayout(pageNumber);
