@@ -26,7 +26,6 @@
     "@bundled-es-modules/pdfjs-dist": "^2.1.266-rc",
     "docx": "^5.0.0-rc3",
     "file-saver": "^2.0.2",
-    "promise-worker": "^2.0.1",
-    "tesseract.js": "^2.0.0-alpha.4"
+    "promise-worker": "^2.0.1"
   }
 }
