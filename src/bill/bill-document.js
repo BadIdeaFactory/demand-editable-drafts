@@ -66,10 +66,11 @@ class BillDocument {
   }
 
   mungeLine(lineRegion){
-    let capitalMatcher = /^(\p{Lu}|\d|\W)*\p{Lu}(\p{Lu}|\d|\W)*$/u;
+    //let capitalMatcher = /^(\p{Lu}|\d|\W)*\p{Lu}(\p{Lu}|\d|\W)*$/u;
+    let capitalMatcher = /^([A-Z]|\W)*[A-Z]([A-Z]|\W)*$/;
     if (!capitalMatcher.unicode) { // if this browser doesn't support unicode regexp
       // then we'll just deal w/ english capital letters.
-      capitalMatcher = /^([^a-z]|\W)*[A-Z]([^a-z]|\W)*$/; // strings w/ at least one capital 
+      capitalMatcher = /^([A-Z]|\d|\W)*[A-Z]([A-Z]|\d|\W)*$/; // strings w/ at least one capital 
     }
 
     const sortedElements = lineRegion.items.sort((a,b)=>a.left-b.left);
@@ -102,6 +103,7 @@ class BillDocument {
   }
 
   process(options={}) {
+    console.log("Processing Regions...");
     const isBillTextParent = (region) => {
       if (Object.keys(region.regions).length > 0) {
         // bill text is always numbered.
@@ -165,6 +167,7 @@ class BillDocument {
 
     let state = { mainMargins:[], pages: [], sections: { before: [], main: [], after:[] } };
     this.pages.forEach(page =>{
+      console.log("Disassembling page...");
       if (options.callback) { options.callback(page.pageNumber, page); }
       if (this.cancelToken) { 
         console.log('calculateLayout canceled'); 
@@ -215,6 +218,7 @@ class BillDocument {
   // as part of `this.process` and maps those inputs into
   // a DocX document.
   async dumpDocX(options={}) {
+    console.log("Converting to DocX");
     // notes about docx format.
     //   - all measurements in OpenOfficeXML is in TWIPs (twentieth of a point)
 

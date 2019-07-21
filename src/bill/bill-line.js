@@ -19,10 +19,11 @@ class BillLine {
   analyze() {
     this.runs = []; // repaired text
 
-    let capitalMatcher = /^(\p{Lu}|\d|\W)*\p{Lu}(\p{Lu}|\d|\W)*$/u;
+    //let capitalMatcher = /^(\p{Lu}|\d|\W)*\p{Lu}(\p{Lu}|\d|\W)*$/u;
+    let capitalMatcher = /^([A-Z]|\d|\W)*[A-Z]([A-Z]|\d|\W)*$/;
     if (!capitalMatcher.unicode) { // if this browser doesn't support unicode regexp
       // then we'll just deal w/ english capital letters.
-      capitalMatcher = /^([^a-z]|\W)*[A-Z]([^a-z]|\W)*$/; // strings w/ at least one capital 
+      capitalMatcher = /^([A-Z]|\d|\W)*[A-Z]([A-Z]|\d|\W)*$/; // strings w/ at least one capital 
     }
 
     const getFontNames = (els) => els.map(el => el.fontName);
