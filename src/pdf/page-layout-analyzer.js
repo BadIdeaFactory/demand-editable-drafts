@@ -195,6 +195,7 @@ class PageLayoutAnalyzer {
     let spaceContainer = document.createElement("div");
     this.whiteSpaces.forEach((space)=>{
       let el = document.createElement("span");
+      el.className = "whitespace"
       el.setAttribute('style', 
       `left: ${space.left}px; top: ${space.top}px; width: ${space.width}px; height: ${space.height}px;`);
       spaceContainer.appendChild(el);

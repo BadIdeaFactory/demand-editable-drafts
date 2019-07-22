@@ -335,8 +335,15 @@
     border: solid 1px black;
   }
 
+  :global(#pdfjs-text-layer) :global(span.whitespace) {
+    background-color: palegreen;
+    border: solid 1px green;
+    opacity: 95%;
+  }
+
   .text-layer-wrapper.hide :global(#pdfjs-text-layer) :global(span) {
     border: 0;
+    background-color: transparent;
   }
 
   progress {
