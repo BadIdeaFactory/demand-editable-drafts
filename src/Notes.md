@@ -13,6 +13,11 @@ This is a scratch pad for research notes.
     - [ ] interstitial sections are unnumbered & cause difficulty when present on pages w/ numbering.
     - [ ] header & footer detection will need to be fleshed out substantially
     - [ ] Attempt line numbering using numbered lists
+- [ ] Drag & Drop Upload pane.
+
+## Credits
+
+- Icons from [Feather Icons](https://feathericons.com/).
 
 ## pdf.js
 
