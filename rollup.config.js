@@ -3,6 +3,7 @@ import resolve from 'rollup-plugin-node-resolve';
 import commonjs from 'rollup-plugin-commonjs';
 import livereload from 'rollup-plugin-livereload';
 import { terser } from 'rollup-plugin-terser';
+import analyze from 'rollup-plugin-analyzer';
 
 const production = !process.env.ROLLUP_WATCH;
 
@@ -17,7 +18,8 @@ export default [
 		context: 'window',
 		plugins: [
 			resolve(),
-			commonjs()
+			commonjs(),
+			analyze({summaryOnly: true}),
 		]
 	},
 	{
@@ -29,7 +31,8 @@ export default [
 		},
 		plugins: [
 			resolve(),
-			commonjs()
+			commonjs(),
+			analyze({summaryOnly: true}),
 		]
 	},
 	{
@@ -48,7 +51,8 @@ export default [
 				// a separate file — better for performance
 				css: css => {
 					css.write('public/bundle.css');
-				}
+				},
+				hydratable: true,
 			}),
 
 			// If you have external dependencies installed from
@@ -65,7 +69,8 @@ export default [
 
 			// If we're building for production (npm run build
 			// instead of npm run dev), minify
-			production && terser()
+			production && terser(),
+			analyze({summaryOnly: true}),
 		]
 	}
 ];
