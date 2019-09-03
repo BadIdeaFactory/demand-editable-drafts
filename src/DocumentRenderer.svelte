@@ -32,7 +32,6 @@
   import DocumentControls from './DocumentControls.svelte';
   import PageLayoutAnalyzer from './pdf/page-layout-analyzer.js';
   import BillDocument from './bill/bill-document.js';
-  import docx from 'docx';
   import FileSaver from 'file-saver';
 
   import { onMount, onDestroy } from 'svelte';
