@@ -21,7 +21,9 @@
     "dev": "run-p start:dev autobuild",
     "start": "sirv public",
     "start:dev": "sirv public --dev",
-    "test": "mocha"
+    "test": "mocha",
+    "gh-pages": "cp -R public/images . && cp public/*.{js,css,map} . && cp public/index.html .",
+    "deploy": "run-s build gh-pages"
   },
   "dependencies": {
     "@bundled-es-modules/pdfjs-dist": "^2.1.266-rc",
