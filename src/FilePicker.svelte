@@ -4,11 +4,20 @@
   let file;
   let fileInput;
   let fileContents;
-  export let accept;
+  let form;
+  export let accept = [];
   export let large;
 
   export function getFilesFromDom(){
-    return fileInput.files;
+    return filterTypes(fileInput.files);
+  }
+
+  function filterTypes(files, types=[accept].flat()) {
+    const acceptable = Array.prototype.filter.call(files, f => {
+      return types.some( type => type == f.type );
+    });
+    console.log(acceptable);
+    return acceptable;
   }
 
   async function readFileContents(file) {
@@ -44,27 +53,39 @@
 
   async function onDrop(e){
     console.log("Dropped!", e.dataTransfer);
-    const files = e.dataTransfer.files;
+    const files = filterTypes(e.dataTransfer.files);
     await getFile(files[0]);
   }
 
   function onDragEnter(e){
-    //console.log("Dragged In!", e.dataTransfer);
+    console.log("Dragged In!", e);
+    form.classList.add('has-dragover');
   }
+
+  function onDragLeave(e){
+    console.log("Dragged Out!", e);
+    form.classList.remove('has-dragover');
+  }
+
 </script>
 
-<form class:large on:drop|preventDefault={onDrop} 
+<form class:large 
+  on:drop|preventDefault={onDrop} 
   on:dragover|preventDefault|stopPropagation 
-  on:dragenter|preventDefault|stopPropagation={onDragEnter} >
-  <input type="file" id="file" class="input-file" accept={accept} bind:this={fileInput} on:input={onInputHandler} />
-  <img class="upload-icon" src="/images/upload.svg" alt="upload a document">
-  <label class="upload-message" for="file">
-    {#if !fileContents }
-      <p><span class="click-here">Choose a file</span> or drag it here.</p>
-    {:else}
-      <p><span class="click-here">Choose a different file</span></p>
-    {/if}
-  </label>
+  on:dragenter|preventDefault|stopPropagation={onDragEnter}
+  on:dragleave|preventDefault|stopPropagation={onDragLeave}
+  bind:this={form} >
+  <div id="drop-box">
+    <input type="file" id="file" class="input-file" accept={accept} bind:this={fileInput} on:input={onInputHandler} />
+    <div class="upload-icon"></div>
+    <label class="upload-message" for="file">
+      {#if !fileContents }
+        <p><span class="click-here">Choose a file</span> or drag it here.</p>
+      {:else}
+        <p><span class="click-here">Choose a different file</span></p>
+      {/if}
+    </label>
+  </div>
 </form>
 
 <style>
@@ -79,8 +100,6 @@
 
     height: 100%;
     max-height: 600px;
-    display: grid;
-    justify-items: center;
   }
 
   form {
@@ -88,10 +107,16 @@
     padding: 10px;
   }
 
-  form.large.has-dragover {
+  :global(form.large.has-dragover) {
     outline-offset: -20px;
     outline-color: #c8dadf;
-    background-color: #fff;
+    background-color: #bbb;
+  }
+
+  #drop-box {
+    display: grid;
+    justify-items: center;
+    width: 100%;
   }
 
   .upload-icon {
@@ -102,6 +127,9 @@
     height: 175px;
     width: 175px;
     align-self: end;
+    background-image: url(/images/upload.svg);
+    background-size: contain;
+    background-repeat: no-repeat;
   }
 
   label.upload-message {
