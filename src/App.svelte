@@ -7,14 +7,19 @@
 	
 	export let picker;
 	export let renderer;
+
+	function openAbout() {
+		console.log("about!");
+	}
 </script>
 
 <div id="grid">
-	<header class="banner">
-		<div class="logotype">DEMAND PROGRESS</div>
+	<header id="banner">
+		<div class="logotype">BillToText</div>
+		<div><a href="about" on:click|preventDefault|stopPropagation={openAbout}>About</a></div>
 	</header>
 	
-	<h1>Bill To Text</h1>
+
 	<main class:large-picker={!$documentStore.contents}>
 		{#if !$documentStore.contents }
 		<section id="front-matter">
@@ -44,18 +49,11 @@
 		{/if}
 	</main>
 	<footer class="attribution">
-		Made with 💖 &amp; 🤔 for Demand Progress by Ted Han &amp; the Bad Idea Factory.
+		Made with 💖 &amp; 🤔 for <span class="logotype">Demand Progress</span> by Ted Han &amp; the Bad Idea Factory.
 	</footer>
 </div>
 
 <style>
-	main {
-		display: grid;
-		grid-template-rows: [header] 50px [description] 200px [mini-picker] 70px [main] auto [footer] 20px;
-		height: 100%;
-		margin: 0 20px;
-	}
-
 	.large-picker section.picker {
 		grid-row-end: footer;
 	}
