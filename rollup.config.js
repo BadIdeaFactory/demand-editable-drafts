@@ -4,8 +4,13 @@ import commonjs from 'rollup-plugin-commonjs';
 import livereload from 'rollup-plugin-livereload';
 import { terser } from 'rollup-plugin-terser';
 import analyze from 'rollup-plugin-analyzer';
+import replace from 'rollup-plugin-replace';
 
 const production = !process.env.ROLLUP_WATCH;
+const production_data = {
+	ga_id: "UA-145851186-1",
+};
+const env_data = production ? production_data : {};
 
 export default [
 	{
@@ -53,6 +58,11 @@ export default [
 					css.write('public/bundle.css');
 				},
 				hydratable: true,
+			}),
+			replace({
+				values: {
+					ENVIRONMENT_DATA: JSON.stringify(env_data),
+				},
 			}),
 
 			// If you have external dependencies installed from
