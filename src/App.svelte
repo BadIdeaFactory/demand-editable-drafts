@@ -73,8 +73,8 @@
 		{/if}
 	</main>
 	<footer class="attribution">
-		Made with 💖 &amp; 🤔 for <span class="logotype">Demand Progress</span> 
-		by Ted Han &amp; the Bad Idea Factory.
+		Made <span class="extra">with 💖 &amp; 🤔</span> for <span class="logotype">Demand Progress</span> 
+		by Ted Han <span class="extra">&amp; the Bad Idea Factory.</span>
 	</footer>
 </div>
 

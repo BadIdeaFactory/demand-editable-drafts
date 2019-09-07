@@ -78,7 +78,20 @@ header .logotype {
 
 #grid footer {
 	grid-row-start: footer;
-	padding: 10px 20px;
+	padding: 10px 0px;
+	background-color: white;
+	text-align: center;
+	width: 100%;
+}
+
+@media all and (max-width: 600px) {
+	#grid footer span.extra {
+		display:none;
+	}
+}
+
+@media all and (max-width: 300px) {
+	
 }
 
 /* Svelte defaults */
