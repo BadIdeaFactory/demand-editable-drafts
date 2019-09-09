@@ -97,6 +97,7 @@
     transition: outline-offset .15s ease-in-out, background-color .15s linear;
 
     padding: 20px;
+    margin: 20px;
 
     height: 100%;
     max-height: 600px;
@@ -113,23 +114,39 @@
     background-color: #bbb;
   }
 
-  #drop-box {
+  form.large #drop-box {
     display: grid;
     justify-items: center;
+  }
+
+  #drop-box {
+    display: flex;
+    justify-content: center;
     width: 100%;
   }
 
   .upload-icon {
+    margin: 10px;
     padding: 10px;
+    background-image: url(/images/upload.svg);
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
   }
 
   .large .upload-icon {
     height: 175px;
     width: 175px;
     align-self: end;
-    background-image: url(/images/upload.svg);
-    background-size: contain;
-    background-repeat: no-repeat;
+  }
+
+  @media all and (max-width: 600px) {
+    .large .upload-icon {
+      height: 75px;
+      width: 75px;
+    }
+  
+    form.large { padding: 0px; }
   }
 
   label.upload-message {

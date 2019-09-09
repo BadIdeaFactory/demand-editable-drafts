@@ -30,6 +30,7 @@ class TextItem {
     if (style.vertical) { angle += Math.PI / 2; }
 
     // i'm still not clear what tx[2] and tx[3] represent.
+    // they're set up so that the font height is the hypotenuse.
     const fontHeight = Math.sqrt((tx[2] * tx[2]) + (tx[3] * tx[3]));
     // assume the that the font's ascenders are equal to the font height.
     let fontAscent = fontHeight;

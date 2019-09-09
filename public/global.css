@@ -17,11 +17,9 @@ header .logotype {
 
 #banner {
 	display: flex;
-	padding: 10px 20px;
+	padding: 20px;
 	align-items: center;
 	justify-content: space-between;
-	grid-row-start: header;
-	grid-row-end: main-body;
 }
 
 #about-wrapper {
@@ -61,7 +59,10 @@ header .logotype {
 	line-height: 1.5em;
 	height: 100%;
 	display: grid;
-	grid-template-rows: [header] 30px [main-body] auto [footer] 40px;
+	grid-template-rows: 
+		[header] 30px 
+		[main] auto
+		[footer] 40px;
 	grid-template-columns: 100%;
 }
 
@@ -69,11 +70,24 @@ header .logotype {
 	text-align: center;
 }
 
+#grid.large-picker main {
+	grid-template-rows:
+		[description] 50%
+		[picker] 50%;
+}
+
 #grid main {
-	margin: 0 20px;
+	grid-row-start: main;
+	grid-row-end: footer;
 	display: grid;
-	grid-template-rows: [header] 50px [description] 200px [mini-picker] 70px [main] auto;
-	height: 100%;
+	grid-template-rows:
+		[picker] 70px
+		[viewer] auto;
+	overflow-y: scroll;
+}
+
+#front-matter {
+	overflow-y: scroll;
 }
 
 #grid footer {
@@ -88,11 +102,14 @@ header .logotype {
 	#grid footer span.extra {
 		display:none;
 	}
+
+	#grid.large-picker main {
+		grid-template-rows: 
+			[description] 55%
+			[picker] 45%;
+	}
 }
 
-@media all and (max-width: 300px) {
-	
-}
 
 /* Svelte defaults */
 

@@ -11,7 +11,7 @@
 
 </script>
 
-<div id="grid">
+<div id="grid" class:large-picker={!$documentStore.contents}>
 	<header id="banner">
 		<div class="logotype">BillToText</div>
 		<div><a href="#" on:click|preventDefault|stopPropagation={() => hideAbout = false}>About</a></div>
@@ -80,12 +80,26 @@
 
 <style>
 	.large-picker section.picker {
-		grid-row-end: footer;
+	}
+
+	#front-matter {
+		margin: 20px;
+	}
+
+	@media all and (max-width: 600px) {
+		#front-matter {
+			grid-row-start: description;
+			grid-row-end: picker;
+		}
+
+		.large-picker section.picker {
+			width: 100%;
+			grid-row-start: picker;
+			grid-row-end: footer;
+		}
 	}
 
 	section.picker {
-		grid-row-start: mini-picker;
-		grid-row-end: main;
 	}
 
 	.large-picker section.document {
@@ -98,11 +112,4 @@
 		display: flex;
 		justify-content: center;
 	}
-
-	footer.attribution {
-		position: fixed;
-		bottom: 0px;
-		text-align: center;
-	}
-
 </style>
