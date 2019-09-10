@@ -1,6 +1,6 @@
 @import url('https://fonts.googleapis.com/css?family=Roboto+Slab:700&display=swap');
 
-a {
+a, .link {
 	color: rgb(139,0,0);
 	text-decoration: none;
 }
@@ -8,6 +8,7 @@ a {
 header .logotype {
 	font-size: 20px;
 }
+
 
 .logotype {
 	color: rgb(139,0,0);
@@ -60,9 +61,8 @@ header .logotype {
 	height: 100%;
 	display: grid;
 	grid-template-rows: 
-		[header] 30px 
-		[main] auto
-		[footer] 40px;
+		[header] 40px
+		[main] auto;
 	grid-template-columns: 100%;
 }
 
@@ -70,51 +70,23 @@ header .logotype {
 	text-align: center;
 }
 
-#grid.large-picker main {
-	grid-template-rows:
-		[description] 50%
-		[picker] 50%;
+#grid header {
+	display: flex;
+	justify-content: space-between;
+	padding: 10px 20px;
+}
+
+#grid #front-matter {
+	padding: 0px 20px;
 }
 
 #grid main {
-	grid-row-start: main;
-	grid-row-end: footer;
-	display: grid;
-	grid-template-rows:
-		[picker] 70px
-		[viewer] auto;
 	overflow-y: scroll;
 }
-
-#front-matter {
-	overflow-y: scroll;
-}
-
-#grid footer {
-	grid-row-start: footer;
-	padding: 10px 0px;
-	background-color: white;
-	text-align: center;
-	width: 100%;
-}
-
-@media all and (max-width: 600px) {
-	#grid footer span.extra {
-		display:none;
-	}
-
-	#grid.large-picker main {
-		grid-template-rows: 
-			[description] 55%
-			[picker] 45%;
-	}
-}
-
 
 /* Svelte defaults */
 
 html, body {
-	position: relative;
 	width: 100%;
 	height: 100%;
 }

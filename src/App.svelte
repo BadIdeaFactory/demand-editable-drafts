@@ -43,6 +43,9 @@
 		</div>
 	</div>
 	<main class:large-picker={!$documentStore.contents}>
+		<section class="picker" >
+			<FilePicker accept={"application/pdf"} bind:this={picker} large={!$documentStore.contents} />
+		</section>
 		{#if !$documentStore.contents }
 		<section id="front-matter">
 			<p>BillToText.com turns PDFs of federal legislation into text files. 
@@ -63,44 +66,24 @@
 			</p>
 		</section>
 		{/if}
-		<section class="picker" >
-			<FilePicker accept={"application/pdf"} bind:this={picker} large={!$documentStore.contents} />
-		</section>
 		{#if $documentStore.contents }
 		<section class="document">
 			<DocumentRenderer src={$documentStore} bind:this={renderer} />
 		</section>
 		{/if}
 	</main>
+	<!--
 	<footer class="attribution">
 		Made <span class="extra">with 💖 &amp; 🤔</span> for <span class="logotype">Demand Progress</span> 
 		by Ted Han <span class="extra">&amp; the Bad Idea Factory.</span>
 	</footer>
+	-->
 </div>
 
 <style>
 	.large-picker section.picker {
 	}
 
-	#front-matter {
-		margin: 20px;
-	}
-
-	@media all and (max-width: 600px) {
-		#front-matter {
-			grid-row-start: description;
-			grid-row-end: picker;
-		}
-
-		.large-picker section.picker {
-			width: 100%;
-			grid-row-start: picker;
-			grid-row-end: footer;
-		}
-	}
-
-	section.picker {
-	}
 
 	.large-picker section.document {
 		display: none;
